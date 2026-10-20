@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="0.52"
+        android:scaleY="0.52"
+        android:translateX="5.76"
+        android:translateY="5.76">
+        <!-- Bold filled building and inspection report silhouette -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M15,11V5l-3,-3 -3,3v2H3v14h18V11h-6zM7,19H5v-2h2v2zM7,15H5v-2h2v2zM7,11H5V9h2v2zM13,19h-2v-2h2v2zM13,15h-2v-2h2v2zM13,11h-2V9h2v2zM13,7h-2V5h2v2zM19,19h-2v-2h2v2zM19,15h-2v-2h2v2z" />
+        <path
+            android:fillColor="#F4A261"
+            android:pathData="M18.5,3.5L17,5l1.5,1.5L21.5,3.5 20,2z" />
+    </group>
+</vector>

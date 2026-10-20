@@ -1,0 +1,1880 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#064e3b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="রাজউক প্রতিবেদন" />
+  <title>রাজউক অফিস মাসিক প্রতিবেদন - ওয়েব অ্যাপ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    /* Universal Cross-Browser & Offline Fallback Styles */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f3f6f4;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    .hidden {
+      display: none !important;
+    }
+    input, select, button, textarea {
+      font-family: inherit;
+    }
+    /* Official RAJUK A4 PDF Print Styles (Works across Chrome, Edge, Firefox, Safari) */
+    .rajuk-pdf-sheet {
+      background: #ffffff;
+      color: #000000;
+      font-family: 'Noto Sans Bengali', serif;
+      padding: 18px 22px;
+      width: 100%;
+      max-width: 210mm;
+      margin: 0 auto;
+      box-sizing: border-box;
+      line-height: 1.35;
+    }
+    .rajuk-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 11px;
+    }
+    .rajuk-table th, .rajuk-table td {
+      border: 1px solid #000000;
+      padding: 3px 5px;
+      text-align: center;
+      vertical-align: middle;
+      color: #000000;
+    }
+    .rajuk-table th {
+      font-weight: 700;
+      background-color: #ffffff;
+    }
+    .rajuk-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: underline;
+      margin-top: 8px;
+      margin-bottom: 5px;
+      color: #000000;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printableArea, #printableArea * {
+        visibility: visible;
+      }
+      #printableArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-emerald-900 text-white shadow-md no-print sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center font-bold text-lg border border-emerald-500">
+          রা
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold leading-tight">রাজধানী উন্নয়ন কর্তৃপক্ষ (রাজউক)</h1>
+          <p class="text-xs text-emerald-200" id="headerSubtitle">অফিস মাসিক প্রতিবেদন ও ইমারত পরিদর্শন ওয়েব পোর্টাল (সকল ব্রাউজার সাপোর্টেড)</p>
+        </div>
+      </div>
+
+      <div id="navActions" class="hidden flex items-center flex-wrap gap-2">
+        <div class="flex items-center bg-emerald-800/90 border border-emerald-600 rounded-lg px-2.5 py-1 text-xs md:text-sm">
+          <span class="text-emerald-200 mr-2">মাস:</span>
+          <input type="month" id="globalMonthPicker" class="bg-transparent text-white font-semibold focus:outline-none cursor-pointer" />
+        </div>
+        <button id="btnOpenAdminPdfModal" onclick="openPdfModal()" class="hidden bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs md:text-sm flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+          <span>📄 পিডিএফ রিপোর্ট (Head Office / Custom)</span>
+        </button>
+        <button onclick="exportBackupJson()" class="bg-emerald-800 hover:bg-emerald-700 border border-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer" title="ডাটা ব্যাকআপ ডাউনলোড">
+          ⬇️ ব্যাকআপ
+        </button>
+        <label class="bg-emerald-800 hover:bg-emerald-700 border border-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer" title="ডাটা রিস্টোর">
+          ⬆️ রিস্টোর
+          <input type="file" accept=".json" onchange="importBackupJson(event)" class="hidden" />
+        </label>
+        <button onclick="logout()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition cursor-pointer">
+          লগআউট
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 no-print">
+
+    <!-- ================= AUTH VIEW (LOGIN / REGISTER) ================= -->
+    <section id="authSection" class="max-w-md mx-auto mt-6 bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+      <div class="bg-emerald-900 p-6 text-white text-center">
+        <h2 class="text-xl font-bold">লগইন / রেজিস্ট্রেশন</h2>
+        <p class="text-xs text-emerald-200 mt-1">Chrome, Safari, Firefox, Edge বা যেকোনো ব্রাউজার থেকে ব্যবহার করুন</p>
+      </div>
+
+      <!-- Role / Mode Tabs -->
+      <div class="grid grid-cols-3 border-b border-slate-200 bg-slate-50 text-xs md:text-sm font-semibold">
+        <button id="authTabInspector" onclick="switchAuthTab('inspector')" class="py-3 text-emerald-800 border-b-2 border-emerald-700 bg-white cursor-pointer">পরিদর্শক লগইন</button>
+        <button id="authTabRegister" onclick="switchAuthTab('register')" class="py-3 text-slate-600 hover:text-slate-900 cursor-pointer">রেজিস্ট্রেশন</button>
+        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="py-3 text-slate-600 hover:text-slate-900 cursor-pointer">অ্যাডমিন লগইন</button>
+      </div>
+
+      <div class="p-6">
+        <div id="authErrorBox" class="hidden mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium"></div>
+        <div id="authSuccessBox" class="hidden mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium"></div>
+
+        <!-- Inspector Login Form -->
+        <form id="formInspectorLogin" onsubmit="handleInspectorLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">মোবাইল নাম্বার</label>
+            <input type="text" id="loginPhone" required placeholder="01XXXXXXXXX" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">পাসওয়ার্ড</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-lg text-sm shadow transition cursor-pointer">
+            পরিদর্শক লগইন করুন
+          </button>
+        </form>
+
+        <!-- Inspector Registration Form -->
+        <form id="formInspectorRegister" onsubmit="handleInspectorRegister(event)" class="hidden space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ইমারত পরিদর্শকের নাম *</label>
+            <input type="text" id="regName" required placeholder="আপনার পূর্ণ নাম লিখুন" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">পদবী / সাব-জোন *</label>
+              <input type="text" id="regDesignation" required placeholder="যেমন: ৬/১" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">অফিস / জোন *</label>
+              <input type="text" id="regOffice" required value="জোন-৬, রাজউক" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">মোবাইল নাম্বার (লগইন আইডি) *</label>
+            <input type="text" id="regPhone" required placeholder="01XXXXXXXXX" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">পাসওয়ার্ড (ন্যূনতম ৪ অক্ষর) *</label>
+            <input type="password" id="regPassword" required minlength="4" placeholder="••••••••" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-lg text-sm shadow transition cursor-pointer">
+            রেজিস্ট্রেশন সম্পন্ন করুন
+          </button>
+        </form>
+
+        <!-- Admin Login Form -->
+        <form id="formAdminLogin" onsubmit="handleAdminLogin(event)" class="hidden space-y-4">
+          <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+            ডিফল্ট অ্যাডমিন ইউজারনেম: <strong>admin</strong> এবং পাসওয়ার্ড: <strong>admin123</strong>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">অ্যাডমিন আইডি / ইউজারনেম</label>
+            <input type="text" id="adminUsername" required value="admin" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">অ্যাডমিন পাসওয়ার্ড</label>
+            <input type="password" id="adminPassword" required value="admin123" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none" />
+          </div>
+          <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm shadow transition cursor-pointer">
+            অ্যাডমিন প্যানেলে প্রবেশ করুন
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= MAIN APP WORKSPACE ================= -->
+    <section id="appWorkspace" class="hidden space-y-6">
+
+      <!-- Mode Switch Tabs -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-1.5">
+          <button id="tabBtnOverview" onclick="switchWorkspaceTab('overview')" class="hidden px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition cursor-pointer">
+            📊 অ্যাডমিন ড্যাশবোর্ড ওভারভিউ
+          </button>
+          <button id="tabBtnEnterData" onclick="switchWorkspaceTab('enter')" class="px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition cursor-pointer">
+            ✍️ তথ্য এন্ট্রি (Enter Data)
+          </button>
+          <button id="tabBtnViewData" onclick="switchWorkspaceTab('view')" class="px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition cursor-pointer">
+            📋 সংরক্ষিত তথ্য দেখুন (View Data)
+          </button>
+          <button id="tabBtnUsers" onclick="switchWorkspaceTab('users')" class="hidden px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition cursor-pointer">
+            👥 পরিদর্শক অনুমোদন (<span id="pendingUsersBadge">0</span>)
+          </button>
+        </div>
+
+        <div class="text-xs text-slate-600 px-2 font-medium" id="currentUserBadge"></div>
+      </div>
+
+      <!-- 1. ADMIN OVERVIEW DASHBOARD (No Data Visualization Chart per requirement) -->
+      <div id="viewOverview" class="hidden space-y-6">
+        <div class="bg-gradient-to-r from-emerald-900 to-teal-800 rounded-2xl p-5 text-white shadow flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-700 text-emerald-100 text-xs font-semibold">অ্যাডমিন কন্ট্রোল রুম</span>
+            <h2 class="text-xl font-bold mt-1">মাসিক সামগ্রিক প্রতিবেদন সারসংক্ষেপ (<span id="overviewMonthLabel"></span>)</h2>
+            <p class="text-xs text-emerald-200 mt-0.5">সকল পরিদর্শকের এন্ট্রিকৃত ৫টি ক্যাটাগরির তথ্যের সমন্বিত হিসাব</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="openPdfModal('HEAD_OFFICE')" class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs md:text-sm shadow flex items-center gap-2 transition cursor-pointer">
+              <span>🏛️ হেড অফিস পিডিএফ রিপোর্ট</span>
+            </button>
+            <button onclick="openPdfModal('CUSTOMIZED')" class="bg-white/15 hover:bg-white/25 text-white border border-white/30 font-semibold px-4 py-2.5 rounded-xl text-xs md:text-sm flex items-center gap-2 transition cursor-pointer">
+              <span>⚙️ কাস্টমাইজড রিপোর্ট</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 Category Summary Cards -->
+        <div id="adminSummaryCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- 2. ENTER DATA SECTION -->
+      <div id="viewEnterData" class="space-y-5">
+        <!-- Category Selector Pills -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">ক্যাটাগরি নির্বাচন করুন (৫টি ধরণ)</label>
+          <div id="enterCategoryPills" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- Dynamic Entry Form Card -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-4 mb-5">
+            <div>
+              <h3 id="formCategoryTitle" class="text-lg font-bold text-emerald-950"></h3>
+              <p id="formCategorySubtitle" class="text-xs text-slate-500 mt-0.5"></p>
+            </div>
+            <span id="editingBadge" class="hidden px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">সম্পাদনা মোড</span>
+          </div>
+
+          <form id="inspectionEntryForm" onsubmit="handleSaveInspection(event)" class="space-y-4">
+            <input type="hidden" id="editRecordId" value="" />
+
+            <!-- Common Fields -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">প্রতিবেদনের মাস *</label>
+                <input type="month" id="entryReportMonth" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">তারিখ *</label>
+                <input type="date" id="entryInspectionDate" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ইমারত পরিদর্শকের নাম / সাব-জোন *</label>
+                <input type="text" id="entryInspectorName" required placeholder="পরিদর্শকের নাম (যেমন: ৬/১)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white" />
+              </div>
+            </div>
+
+            <!-- Category 1 Fields: নির্মিত বা নির্মাণাধীন ভবন পরিদর্শনের তথ্য -->
+            <div id="fieldsCat1" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">ভবন মালিকের নাম *</label>
+                  <input type="text" id="f_ownerName" placeholder="মালিকের নাম" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">মালিকের মোবাইল নাম্বার</label>
+                  <input type="text" id="f_ownerMobile" placeholder="01XXXXXXXXX" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">ভবনের ঠিকানা / হোল্ডিং *</label>
+                  <input type="text" id="f_buildingAddress" placeholder="রোড, ব্লক, প্লট/হোল্ডিং" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">মৌজার নাম</label>
+                  <input type="text" id="f_mouzaName" placeholder="মৌজার নাম" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">থানার নাম</label>
+                  <input type="text" id="f_thanaName" placeholder="থানার নাম" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">পরিদর্শনকৃত ভবনের ধরণ *</label>
+                  <select id="f_buildingType" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    <option value="নির্মাণাধীন">নির্মাণাধীন</option>
+                    <option value="নির্মিত">নির্মিত</option>
+                    <option value="আবাসিক">আবাসিক (নির্মাণাধীন)</option>
+                    <option value="বাণিজ্যিক">বাণিজ্যিক (নির্মাণাধীন)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">আগে কতবার পরিদর্শন করা হয়েছে</label>
+                  <input type="number" id="f_previousInspectionCount" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">অথরাইজড অফিসার পরিদর্শন করেছেন?</label>
+                  <select id="f_authorizedOfficerInspected" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    <option value="false">না</option>
+                    <option value="true">হ্যাঁ</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">ব্যত্যয়কৃত ভবনের ধরণ (আইন/বিধিমালা)</label>
+                  <select id="f_deviationType" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    <option value="ইমারত নির্মাণ আইন ১৯৫২">ইমারত নির্মাণ আইন ১৯৫২</option>
+                    <option value="ইমারত নির্মাণ বিধিমালা ২০০৮">ইমারত নির্মাণ বিধিমালা ২০০৮</option>
+                    <option value="ব্যত্যয় নেই (নকশা অনুযায়ী)">ব্যত্যয় নেই (নকশা অনুযায়ী)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">গৃহীত ব্যবস্থা</label>
+                  <select id="f_actionTaken" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    <option value="নোটিশ প্রদান">নোটিশ প্রদান</option>
+                    <option value="কাজ বন্ধের নির্দেশ">কাজ বন্ধের নির্দেশ</option>
+                    <option value="উচ্ছেদ/মোবাইল কোর্ট প্রস্তাব">উচ্ছেদ/মোবাইল কোর্ট প্রস্তাব</option>
+                    <option value="নিয়মিতকরণ প্রক্রিয়াধীন">নিয়মিতকরণ প্রক্রিয়াধীন</option>
+                    <option value="প্রযোজ্য নয়">প্রযোজ্য নয়</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 2 Fields: অনিষ্পন্ন প্রতিবেদন (ডাক ও নথি নিষ্পত্তি) -->
+            <div id="fieldsCat2" class="hidden space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">গত মাসের জের</label>
+                  <input type="number" id="f_previousMonthBalance" value="0" min="0" oninput="calcCat2Total()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">আলোচ্য মাসের প্রাপ্তি</label>
+                  <input type="number" id="f_currentMonthReceived" value="0" min="0" oninput="calcCat2Total()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">মোট প্রাপ্তি (স্বয়ংক্রিয়)</label>
+                  <input type="number" id="f_totalReceived" value="0" readonly class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 text-sm font-bold" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">মাসের শেষ কার্যদিবসে অনিষ্পন্ন সংখ্যা</label>
+                  <input type="number" id="f_unresolvedAtMonthEnd" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">মাসের শেষ কার্যদিবসে অনিষ্পন্ন সময়কাল ক্যাটাগরি</label>
+                <select id="f_unresolvedDurationCategory" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                  <option value="১ সপ্তাহের অধিক অথচ ২ সপ্তাহের অধিক নয়">১ সপ্তাহের অধিক অথচ ২ সপ্তাহের অধিক নয়</option>
+                  <option value="২ সপ্তাহের অধিক অথচ ১ মাসের অধিক নয়">২ সপ্তাহের অধিক অথচ ১ মাসের অধিক নয়</option>
+                  <option value="এক মাসের অধিক">এক মাসের অধিক</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Category 3 Fields: নকশা অনুমোদনের তথ্য -->
+            <div id="fieldsCat3" class="hidden space-y-4">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Submitted (আবেদন)</label>
+                  <input type="number" id="f_planSubmitted" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Approved (অনুমোদিত)</label>
+                  <input type="number" id="f_planApproved" value="0" min="0" oninput="calcCat3Completed()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Rejected (প্রত্যাখ্যাত)</label>
+                  <input type="number" id="f_planRejected" value="0" min="0" oninput="calcCat3Completed()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Sent For Feedback</label>
+                  <input type="number" id="f_planSentForFeedback" value="0" min="0" oninput="calcCat3Completed()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Completed (স্বয়ংক্রিয়)</label>
+                  <input type="number" id="f_planCompleted" value="0" readonly class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 text-sm font-bold" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Work In Progress</label>
+                  <input type="number" id="f_planWorkInProgress" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Completed Within 45 Days</label>
+                  <input type="number" id="f_planCompletedWithin45Days" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Completed &gt; 45 Working Days</label>
+                  <input type="number" id="f_planCompletedMoreThan45Days" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 4 Fields: অকুপেন্সী সনদ -->
+            <div id="fieldsCat4" class="hidden space-y-4">
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">পূর্ববর্তী মাসের জের</label>
+                  <input type="number" id="f_occupancyPrevMonthBalance" value="0" min="0" oninput="calcCat4Total()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">বর্তমান মাসে প্রাপ্ত আবেদন</label>
+                  <input type="number" id="f_occupancyCurrentMonthReceived" value="0" min="0" oninput="calcCat4Total()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">জেরসহ মোট আবেদন (স্বয়ংক্রিয়)</label>
+                  <input type="number" id="f_occupancyTotalReceived" value="0" readonly class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 text-sm font-bold" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">পরিদর্শনকৃত ভবনের সংখ্যা</label>
+                  <input type="number" id="f_occupancyInspectedBuildings" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">প্রদানকৃত সনদ সংখ্যা</label>
+                  <input type="number" id="f_occupancyIssuedCount" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">প্রদান করা হয় নি (সংখ্যা)</label>
+                  <input type="number" id="f_occupancyNotIssuedCount" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Occupancy Certificate প্রদান না করার কারণ</label>
+                <input type="text" id="f_occupancyNotIssuedReason" placeholder="কারণ উল্লেখ করুন (যদি থাকে)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              </div>
+            </div>
+
+            <!-- Category 5 Fields: মোবাইল কোর্টের তথ্য -->
+            <div id="fieldsCat5" class="hidden space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">ভবনের ঠিকানা / স্থান *</label>
+                  <input type="text" id="f_mcAddress" placeholder="মোবাইল কোর্ট পরিচালনার স্থান" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">মৌজার নাম</label>
+                  <input type="text" id="f_mcMouza" placeholder="মৌজার নাম" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">থানার নাম</label>
+                  <input type="text" id="f_mcThana" placeholder="থানার নাম" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">ভবনের অবস্থা</label>
+                  <select id="f_mobileCourtBuildingStage" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                    <option value="নির্মাণাধীন">নির্মাণাধীন</option>
+                    <option value="নির্মিত">নির্মিত</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">জরিমানার পরিমাণ (টাকা)</label>
+                  <input type="text" id="f_mobileCourtFineAmount" placeholder="যেমন: 200000" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">বিদ্যুৎ বিচ্ছিন্নকৃত ভবন সংখ্যা</label>
+                  <input type="number" id="f_mobileCourtElectricityDisconnectedCount" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">মিটার অপসারণ সংখ্যা</label>
+                  <input type="number" id="f_mobileCourtMeterRemovedCount" value="0" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Remarks -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">মন্তব্য / অতিরিক্ত তথ্য (সাব-জোন বা নোট)</label>
+              <input type="text" id="f_remarks" placeholder="ঐচ্ছিক মন্তব্য..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <button type="submit" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow transition cursor-pointer">
+                💾 তথ্য সংরক্ষণ করুন
+              </button>
+              <button type="button" onclick="resetEntryForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition cursor-pointer">
+                ফর্ম রিসেট
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 3. VIEW DATA SECTION -->
+      <div id="viewDataList" class="hidden space-y-4">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <div id="viewCategoryPills" class="flex flex-wrap gap-1.5"></div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="searchRecordsInput" oninput="renderRecordsTable()" placeholder="মালিক, ঠিকানা বা পরিদর্শক খুঁজুন..." class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs md:text-sm w-56" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs md:text-sm">
+              <thead id="recordsTableHead" class="bg-slate-100 text-slate-700 border-b border-slate-200"></thead>
+              <tbody id="recordsTableBody" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+          <div id="emptyRecordsState" class="hidden p-10 text-center text-slate-500 text-sm">
+            নির্বাচিত মাস ও ক্যাটাগরিতে কোনো তথ্য পাওয়া যায়নি।
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. ADMIN USER APPROVAL SECTION -->
+      <div id="viewUsersList" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+          <h3 class="text-base font-bold text-slate-800 mb-1">নিবন্ধিত ইমারত পরিদর্শকদের তালিকা ও অনুমোদন</h3>
+          <p class="text-xs text-slate-500 mb-4">নতুন পরিদর্শক রেজিস্ট্রেশন করলে এখান থেকে Approve বা Reject করতে পারবেন</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs md:text-sm">
+              <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <tr>
+                  <th class="p-3">নাম</th>
+                  <th class="p-3">পদবী / সাব-জোন</th>
+                  <th class="p-3">অফিস</th>
+                  <th class="p-3">মোবাইল নাম্বার</th>
+                  <th class="p-3">স্ট্যাটাস</th>
+                  <th class="p-3 text-right">অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ================= ADMIN PDF REPORT MODAL (HEAD OFFICE & CUSTOMIZED) ================= -->
+  <div id="pdfReportModal" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 overflow-y-auto no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[94vh] flex flex-col overflow-hidden border border-slate-200">
+
+      <!-- Modal Header -->
+      <div class="bg-emerald-950 text-white px-6 py-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-base md:text-lg font-bold">অ্যাডমিন পিডিএফ রিপোর্ট জেনারেটর (A4 অফিসিয়াল ছক)</h3>
+          <p class="text-xs text-emerald-200">১. হেড অফিস রিপোর্ট (৫-টেবিল রাজউক ফরম্যাট) • ২. কাস্টমাইজড রিপোর্ট (নির্বাচিত কলাম)</p>
+        </div>
+        <button onclick="closePdfModal()" class="text-white/80 hover:text-white text-xl font-bold px-2 cursor-pointer">✕</button>
+      </div>
+
+      <!-- Report Mode Tabs & Controls -->
+      <div class="p-4 bg-slate-50 border-b border-slate-200 space-y-4 overflow-y-auto max-h-[42vh]">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="inline-flex rounded-xl bg-slate-200 p-1">
+            <button id="pdfTabHeadOffice" onclick="switchPdfMode('HEAD_OFFICE')" class="px-4 py-2 rounded-lg text-xs md:text-sm font-bold bg-emerald-800 text-white shadow cursor-pointer">
+              ১. হেড অফিস রিপোর্ট (অফিসিয়াল ছক)
+            </button>
+            <button id="pdfTabCustom" onclick="switchPdfMode('CUSTOMIZED')" class="px-4 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 cursor-pointer">
+              ২. কাস্টমাইজড রিপোর্ট (কলাম নির্বাচন)
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="downloadPdfFile()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-xs md:text-sm shadow flex items-center gap-1.5 transition cursor-pointer">
+              📥 PDF ডাউনলোড করুন
+            </button>
+            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs md:text-sm shadow flex items-center gap-1.5 transition cursor-pointer">
+              🖨️ সরাসরি প্রিন্ট / Save PDF
+            </button>
+            <button onclick="sharePdfOnWhatsApp()" class="bg-[#25D366] hover:bg-[#1ebe5d] text-slate-950 font-bold px-4 py-2 rounded-xl text-xs md:text-sm shadow flex items-center gap-1.5 transition cursor-pointer">
+              📲 WhatsApp-এ শেয়ার করুন
+            </button>
+          </div>
+        </div>
+
+        <!-- Head Office Zone & Sub-Zone Inputs -->
+        <div id="headOfficeInputsBox" class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3.5 rounded-xl border border-emerald-200">
+          <div>
+            <label class="block text-xs font-bold text-emerald-950 mb-1">জোনের নাম / নম্বর (Zone Name) *</label>
+            <input type="text" id="pdfZoneInput" value="৬" oninput="renderLivePdfPreview()" placeholder="যেমন: ৬ বা জোন-৬" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-emerald-950 mb-1">সাব-জোনের নাম / নম্বর (Sub-Zone Name) *</label>
+            <input type="text" id="pdfSubZoneInput" value="৬/১, ৬/২" oninput="renderLivePdfPreview()" placeholder="যেমন: ৬/১ বা ৬/১, ৬/২" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-emerald-950 mb-1">পরিদর্শক ফিল্টার</label>
+            <select id="pdfInspectorFilter" onchange="renderLivePdfPreview()" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm bg-white">
+              <option value="ALL">সকল পরিদর্শক</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Customized Report Column Checkboxes -->
+        <div id="customReportInputsBox" class="hidden bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <label class="text-xs font-bold text-slate-700 mr-2">ক্যাটাগরি:</label>
+              <select id="customPdfCategorySelect" onchange="initCustomColumnsForCategory()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs md:text-sm font-semibold bg-white"></select>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" onclick="toggleAllCustomCols(true)" class="text-xs px-2.5 py-1 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 cursor-pointer">সব কলাম সিলেক্ট</button>
+              <button type="button" onclick="toggleAllCustomCols(false)" class="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200 cursor-pointer">আনসিলেক্ট</button>
+            </div>
+          </div>
+          <div id="customColumnCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1"></div>
+        </div>
+      </div>
+
+      <!-- Live Printable A4 Preview Area -->
+      <div class="flex-1 bg-slate-200 p-4 md:p-6 overflow-y-auto">
+        <div id="printableArea" class="rajuk-pdf-sheet shadow-xl rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONSTANTS & CATEGORIES ====================
+    const CATEGORIES = [
+      { id: 'নির্মিত বা নির্মাণাধীন ভবন পরিদর্শনের তথ্য', short: '১. ভবন পরিদর্শন', sub: 'নির্মিত বা নির্মাণাধীন ভবন পরিদর্শনের তথ্য' },
+      { id: 'অনিষ্পন্ন প্রতিবেদন', short: '২. ডাক ও নথি নিষ্পত্তি', sub: 'ডাক ও নথি নিষ্পত্তি সংক্রান্ত প্রতিবেদন' },
+      { id: 'নকশা অনুমোদনের তথ্য', short: '৩. নকশা অনুমোদন', sub: 'নকশা অনুমোদনের তথ্য (Submitted / Approved / Completed)' },
+      { id: 'অকুপেন্সী সনদ', short: '৪. অকুপেন্সী সনদ', sub: 'অকুপেন্সী সনদ আবেদন ও নিষ্পত্তি তথ্য' },
+      { id: 'মোবাইল কোর্টের তথ্য', short: '৫. মোবাইল কোর্ট', sub: 'মোবাইল কোর্ট, জরিমানা, বিদ্যুৎ ও মিটার অপসারণ' }
+    ];
+
+    function normalizeCategoryId(rawCat) {
+      const c = String(rawCat || '').trim();
+      if (c.includes('ভবন পরিদর্শন')) return CATEGORIES[0].id;
+      if (c.includes('অনিষ্পন্ন') || c.includes('ডাক')) return CATEGORIES[1].id;
+      if (c.includes('নকশা')) return CATEGORIES[2].id;
+      if (c.includes('অকুপেন্সী') || c.includes('Occupancy')) return CATEGORIES[3].id;
+      if (c.includes('মোবাইল কোর্ট')) return CATEGORIES[4].id;
+      return CATEGORIES[0].id;
+    }
+
+    const CUSTOM_COLUMNS_BY_CAT = {
+      'নির্মিত বা নির্মাণাধীন ভবন পরিদর্শনের তথ্য': [
+        { key: 'inspectionDate', label: 'তারিখ' },
+        { key: 'inspectorName', label: 'পরিদর্শকের নাম/সাব-জোন' },
+        { key: 'ownerName', label: 'ভবন মালিকের নাম' },
+        { key: 'ownerMobile', label: 'মোবাইল নাম্বার' },
+        { key: 'buildingAddress', label: 'ভবনের ঠিকানা' },
+        { key: 'mouzaName', label: 'মৌজার নাম' },
+        { key: 'thanaName', label: 'থানার নাম' },
+        { key: 'buildingType', label: 'ভবনের ধরণ' },
+        { key: 'previousInspectionCount', label: 'পূর্ববর্তী পরিদর্শন সংখ্যা' },
+        { key: 'authorizedOfficerInspected', label: 'অথরাইজড অফিসার পরিদর্শন' },
+        { key: 'deviationType', label: 'ব্যত্যয়কৃত ভবনের ধরণ' },
+        { key: 'actionTaken', label: 'গৃহীত ব্যবস্থা' },
+        { key: 'remarks', label: 'মন্তব্য' }
+      ],
+      'অনিষ্পন্ন প্রতিবেদন': [
+        { key: 'inspectionDate', label: 'তারিখ' },
+        { key: 'inspectorName', label: 'পরিদর্শক/শাখা' },
+        { key: 'previousMonthBalance', label: 'গত মাসের জের' },
+        { key: 'currentMonthReceived', label: 'আলোচ্য মাসের প্রাপ্তি' },
+        { key: 'totalReceived', label: 'মোট প্রাপ্তি' },
+        { key: 'unresolvedAtMonthEnd', label: 'মাস শেষে অনিষ্পন্ন' },
+        { key: 'unresolvedDurationCategory', label: 'অনিষ্পন্ন সময়কাল' },
+        { key: 'remarks', label: 'মন্তব্য' }
+      ],
+      'নকশা অনুমোদনের তথ্য': [
+        { key: 'inspectorName', label: 'সাব-জোন / পরিদর্শক' },
+        { key: 'planSubmitted', label: 'Submitted' },
+        { key: 'planApproved', label: 'Approved' },
+        { key: 'planRejected', label: 'Rejected' },
+        { key: 'planCompleted', label: 'Completed' },
+        { key: 'planWorkInProgress', label: 'Work In Progress' },
+        { key: 'planSentForFeedback', label: 'Sent For Feedback' },
+        { key: 'planCompletedWithin45Days', label: 'Within 45 Days' },
+        { key: 'planCompletedMoreThan45Days', label: 'More Than 45 Days' },
+        { key: 'remarks', label: 'মন্তব্য' }
+      ],
+      'অকুপেন্সী সনদ': [
+        { key: 'inspectorName', label: 'সাব-জোন / পরিদর্শক' },
+        { key: 'occupancyPrevMonthBalance', label: 'পূর্ববর্তী মাসের জের' },
+        { key: 'occupancyCurrentMonthReceived', label: 'বর্তমান মাসে প্রাপ্ত আবেদন' },
+        { key: 'occupancyTotalReceived', label: 'জেরসহ মোট আবেদন' },
+        { key: 'occupancyInspectedBuildings', label: 'পরিদর্শনকৃত ভবনের সংখ্যা' },
+        { key: 'occupancyIssuedCount', label: 'প্রদানকৃত সনদ সংখ্যা' },
+        { key: 'occupancyNotIssuedCount', label: 'প্রদান করা হয় নি' },
+        { key: 'occupancyNotIssuedReason', label: 'প্রদান না করার কারণ' }
+      ],
+      'মোবাইল কোর্টের তথ্য': [
+        { key: 'inspectionDate', label: 'তারিখ' },
+        { key: 'inspectorName', label: 'সাব-জোন / পরিদর্শক' },
+        { key: 'buildingAddress', label: 'ভবনের ঠিকানা / স্থান' },
+        { key: 'mobileCourtBuildingStage', label: 'ভবনের অবস্থা' },
+        { key: 'mobileCourtFineAmount', label: 'জরিমানার পরিমাণ' },
+        { key: 'mobileCourtElectricityDisconnectedCount', label: 'বিদ্যুৎ বিচ্ছিন্ন ভবন সংখ্যা' },
+        { key: 'mobileCourtMeterRemovedCount', label: 'মিটার অপসারণ সংখ্যা' },
+        { key: 'remarks', label: 'মন্তব্য' }
+      ]
+    };
+
+    // ==================== STATE & STORAGE ====================
+    const STORAGE_KEY_REPORTS = 'rajuk_web_inspection_reports_v1';
+    const STORAGE_KEY_USERS = 'rajuk_web_user_accounts_v1';
+    const STORAGE_KEY_SESSION = 'rajuk_web_current_session_v1';
+
+    let currentSession = null;
+    let selectedMonth = new Date().toISOString().slice(0, 7);
+    let activeEnterCategory = CATEGORIES[0].id;
+    let activeViewCategory = CATEGORIES[0].id;
+    let activePdfMode = 'HEAD_OFFICE';
+    let selectedCustomColumns = new Set();
+
+    // ==================== BANGLA NUMBER & DATE HELPERS ====================
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    function toBanglaDigits(val) {
+      return String(val ?? '').replace(/[0-9]/g, d => bnDigits[parseInt(d, 10)]);
+    }
+    function toBanglaTwoDigits(num) {
+      const n = parseInt(num, 10) || 0;
+      if (n === 0) return '০';
+      const padded = n < 10 ? '0' + n : String(n);
+      return toBanglaDigits(padded);
+    }
+    function formatBanglaMonthYear(ym) {
+      if (!ym || !ym.includes('-')) return toBanglaDigits(ym);
+      const [y, m] = ym.split('-');
+      const months = {
+        '01': 'জানুয়ারি', '02': 'ফেব্রুয়ারি', '03': 'মার্চ', '04': 'এপ্রিল',
+        '05': 'মে', '06': 'জুন', '07': 'জুলাই', '08': 'আগস্ট',
+        '09': 'সেপ্টেম্বর', '10': 'অক্টোবর', '11': 'নভেম্বর', '12': 'ডিসেম্বর'
+      };
+      return `${months[m] || m}/${toBanglaDigits(y)}`;
+    }
+
+    // ==================== DATA ACCESS ====================
+    function loadReports() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_REPORTS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return parsed.map(r => ({
+              ...r,
+              reportCategory: normalizeCategoryId(r.reportCategory)
+            }));
+          }
+        }
+      } catch (e) {}
+      return [];
+    }
+    function saveReports(list) {
+      localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(list));
+    }
+    function loadUsers() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_USERS);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return [];
+    }
+    function saveUsers(list) {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(list));
+    }
+
+    // ==================== INITIALIZATION ====================
+    window.addEventListener('DOMContentLoaded', () => {
+      const mp = document.getElementById('globalMonthPicker');
+      mp.value = selectedMonth;
+      mp.addEventListener('change', (e) => {
+        selectedMonth = e.target.value || selectedMonth;
+        document.getElementById('entryReportMonth').value = selectedMonth;
+        refreshAllViews();
+      });
+
+      document.getElementById('entryReportMonth').value = selectedMonth;
+      document.getElementById('entryInspectionDate').value = new Date().toISOString().slice(0, 10);
+
+      const customCatSel = document.getElementById('customPdfCategorySelect');
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.short + ' - ' + c.id;
+        customCatSel.appendChild(opt);
+      });
+      initCustomColumnsForCategory();
+
+      try {
+        const savedSession = localStorage.getItem(STORAGE_KEY_SESSION);
+        if (savedSession) {
+          currentSession = JSON.parse(savedSession);
+          enterWorkspace();
+        }
+      } catch (e) {}
+    });
+
+    // ==================== AUTH HANDLERS ====================
+    function switchAuthTab(tab) {
+      document.getElementById('authErrorBox').classList.add('hidden');
+      document.getElementById('authSuccessBox').classList.add('hidden');
+
+      const tabs = {
+        inspector: ['authTabInspector', 'formInspectorLogin'],
+        register: ['authTabRegister', 'formInspectorRegister'],
+        admin: ['authTabAdmin', 'formAdminLogin']
+      };
+      Object.keys(tabs).forEach(k => {
+        const [btnId, formId] = tabs[k];
+        const btn = document.getElementById(btnId);
+        const form = document.getElementById(formId);
+        if (k === tab) {
+          btn.className = 'py-3 text-emerald-800 border-b-2 border-emerald-700 bg-white font-bold cursor-pointer';
+          form.classList.remove('hidden');
+        } else {
+          btn.className = 'py-3 text-slate-600 hover:text-slate-900 cursor-pointer';
+          form.classList.add('hidden');
+        }
+      });
+    }
+
+    function showAuthMessage(msg, isError = true) {
+      const errBox = document.getElementById('authErrorBox');
+      const okBox = document.getElementById('authSuccessBox');
+      if (isError) {
+        errBox.textContent = msg;
+        errBox.classList.remove('hidden');
+        okBox.classList.add('hidden');
+      } else {
+        okBox.textContent = msg;
+        okBox.classList.remove('hidden');
+        errBox.classList.add('hidden');
+      }
+    }
+
+    function handleInspectorRegister(e) {
+      e.preventDefault();
+      const inspectorName = document.getElementById('regName').value.trim();
+      const designation = document.getElementById('regDesignation').value.trim();
+      const officeName = document.getElementById('regOffice').value.trim();
+      const phoneNumber = document.getElementById('regPhone').value.trim();
+      const password = document.getElementById('regPassword').value;
+
+      const users = loadUsers();
+      if (users.some(u => u.phoneNumber === phoneNumber)) {
+        showAuthMessage('এই মোবাইল নাম্বার দিয়ে ইতিমধ্যে একাউন্ট খোলা হয়েছে। লগইন করুন।', true);
+        return;
+      }
+      const newUser = {
+        id: 'usr_' + Date.now(),
+        inspectorName,
+        designation,
+        officeName,
+        phoneNumber,
+        password,
+        approvalStatus: 'approved',
+        createdAt: new Date().toISOString()
+      };
+      users.push(newUser);
+      saveUsers(users);
+
+      currentSession = {
+        role: 'inspector',
+        userId: newUser.id,
+        inspectorName: newUser.inspectorName,
+        designation: newUser.designation,
+        officeName: newUser.officeName,
+        phoneNumber: newUser.phoneNumber
+      };
+      localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(currentSession));
+      enterWorkspace();
+    }
+
+    function handleInspectorLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('loginPhone').value.trim();
+      const pass = document.getElementById('loginPassword').value;
+      const users = loadUsers();
+      const user = users.find(u => u.phoneNumber === phone && u.password === pass);
+      if (!user) {
+        showAuthMessage('মোবাইল নাম্বার অথবা পাসওয়ার্ড সঠিক নয়। নতুন হলে রেজিস্ট্রেশন করুন।', true);
+        return;
+      }
+      if (user.approvalStatus === 'rejected') {
+        showAuthMessage('আপনার একাউন্টটি অ্যাডমিন কর্তৃক বাতিল করা হয়েছে।', true);
+        return;
+      }
+      currentSession = {
+        role: 'inspector',
+        userId: user.id,
+        inspectorName: user.inspectorName,
+        designation: user.designation,
+        officeName: user.officeName,
+        phoneNumber: user.phoneNumber
+      };
+      localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(currentSession));
+      enterWorkspace();
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('adminUsername').value.trim().toLowerCase();
+      const pass = document.getElementById('adminPassword').value;
+      if (user === 'admin' && pass === 'admin123') {
+        currentSession = {
+          role: 'admin',
+          userId: 'admin_master',
+          inspectorName: 'অথরাইজড অফিসার (অ্যাডমিন)',
+          designation: 'জোন-৬',
+          officeName: 'রাজধানী উন্নয়ন কর্তৃপক্ষ'
+        };
+        localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(currentSession));
+        enterWorkspace();
+      } else {
+        showAuthMessage('অ্যাডমিন ইউজারনেম বা পাসওয়ার্ড সঠিক নয় (admin / admin123)।', true);
+      }
+    }
+
+    function logout() {
+      currentSession = null;
+      localStorage.removeItem(STORAGE_KEY_SESSION);
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('appWorkspace').classList.add('hidden');
+      document.getElementById('navActions').classList.add('hidden');
+    }
+
+    function enterWorkspace() {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('appWorkspace').classList.remove('hidden');
+      document.getElementById('navActions').classList.remove('hidden');
+
+      const isAdmin = currentSession?.role === 'admin';
+      document.getElementById('tabBtnOverview').classList.toggle('hidden', !isAdmin);
+      document.getElementById('tabBtnUsers').classList.toggle('hidden', !isAdmin);
+      document.getElementById('btnOpenAdminPdfModal').classList.toggle('hidden', !isAdmin);
+
+      document.getElementById('currentUserBadge').textContent = isAdmin
+        ? '🔐 অ্যাডমিন মোড (সকল পরিদর্শকের তথ্য ও রিপোর্ট)'
+        : `👤 পরিদর্শক: ${currentSession.inspectorName} (${currentSession.designation || ''})`;
+
+      document.getElementById('entryInspectorName').value =
+        currentSession.designation && currentSession.role !== 'admin'
+          ? `${currentSession.inspectorName} (${currentSession.designation})`
+          : (currentSession.inspectorName || '');
+
+      renderCategoryPills();
+      switchWorkspaceTab(isAdmin ? 'overview' : 'enter');
+      refreshAllViews();
+    }
+
+    // ==================== WORKSPACE NAVIGATION ====================
+    function switchWorkspaceTab(tab) {
+      const views = {
+        overview: 'viewOverview',
+        enter: 'viewEnterData',
+        view: 'viewDataList',
+        users: 'viewUsersList'
+      };
+      const btns = {
+        overview: 'tabBtnOverview',
+        enter: 'tabBtnEnterData',
+        view: 'tabBtnViewData',
+        users: 'tabBtnUsers'
+      };
+      const isAdmin = currentSession?.role === 'admin';
+      Object.keys(views).forEach(k => {
+        document.getElementById(views[k]).classList.toggle('hidden', k !== tab);
+        const b = document.getElementById(btns[k]);
+        if (b) {
+          if ((k === 'overview' || k === 'users') && !isAdmin) {
+            b.classList.add('hidden');
+          } else {
+            b.className = k === tab
+              ? 'px-4 py-2 rounded-lg text-xs md:text-sm font-bold bg-emerald-800 text-white shadow transition cursor-pointer'
+              : 'px-4 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer';
+          }
+        }
+      });
+      refreshAllViews();
+    }
+
+    function renderCategoryPills() {
+      const enterContainer = document.getElementById('enterCategoryPills');
+      enterContainer.innerHTML = '';
+      CATEGORIES.forEach(c => {
+        const active = c.id === activeEnterCategory;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => {
+          activeEnterCategory = c.id;
+          renderCategoryPills();
+          updateEntryFormVisibility();
+        };
+        btn.className = active
+          ? 'p-2.5 rounded-xl border-2 border-emerald-700 bg-emerald-50 text-emerald-950 font-bold text-xs text-left shadow-sm transition cursor-pointer'
+          : 'p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs text-left transition cursor-pointer';
+        btn.textContent = c.short;
+        enterContainer.appendChild(btn);
+      });
+
+      const viewContainer = document.getElementById('viewCategoryPills');
+      viewContainer.innerHTML = '';
+      CATEGORIES.forEach(c => {
+        const active = c.id === activeViewCategory;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => {
+          activeViewCategory = c.id;
+          renderCategoryPills();
+          renderRecordsTable();
+        };
+        btn.className = active
+          ? 'px-3 py-1.5 rounded-lg bg-emerald-800 text-white font-bold text-xs shadow-sm cursor-pointer'
+          : 'px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs cursor-pointer';
+        btn.textContent = c.short;
+        viewContainer.appendChild(btn);
+      });
+
+      updateEntryFormVisibility();
+    }
+
+    function updateEntryFormVisibility() {
+      const catObj = CATEGORIES.find(c => c.id === activeEnterCategory) || CATEGORIES[0];
+      document.getElementById('formCategoryTitle').textContent = catObj.id;
+      document.getElementById('formCategorySubtitle').textContent = catObj.sub;
+
+      document.getElementById('fieldsCat1').classList.toggle('hidden', activeEnterCategory !== CATEGORIES[0].id);
+      document.getElementById('fieldsCat2').classList.toggle('hidden', activeEnterCategory !== CATEGORIES[1].id);
+      document.getElementById('fieldsCat3').classList.toggle('hidden', activeEnterCategory !== CATEGORIES[2].id);
+      document.getElementById('fieldsCat4').classList.toggle('hidden', activeEnterCategory !== CATEGORIES[3].id);
+      document.getElementById('fieldsCat5').classList.toggle('hidden', activeEnterCategory !== CATEGORIES[4].id);
+    }
+
+    function calcCat2Total() {
+      const prev = parseInt(document.getElementById('f_previousMonthBalance').value, 10) || 0;
+      const curr = parseInt(document.getElementById('f_currentMonthReceived').value, 10) || 0;
+      document.getElementById('f_totalReceived').value = prev + curr;
+    }
+
+    function calcCat3Completed() {
+      const app = parseInt(document.getElementById('f_planApproved').value, 10) || 0;
+      const rej = parseInt(document.getElementById('f_planRejected').value, 10) || 0;
+      const fb = parseInt(document.getElementById('f_planSentForFeedback').value, 10) || 0;
+      document.getElementById('f_planCompleted').value = app + rej + fb;
+    }
+
+    function calcCat4Total() {
+      const prev = parseInt(document.getElementById('f_occupancyPrevMonthBalance').value, 10) || 0;
+      const curr = parseInt(document.getElementById('f_occupancyCurrentMonthReceived').value, 10) || 0;
+      document.getElementById('f_occupancyTotalReceived').value = prev + curr;
+    }
+
+    // ==================== SAVE & EDIT INSPECTION RECORD ====================
+    function handleSaveInspection(e) {
+      e.preventDefault();
+      const reports = loadReports();
+      const editId = document.getElementById('editRecordId').value;
+
+      const record = {
+        id: editId || ('rep_' + Date.now()),
+        userId: currentSession?.userId || 'local_user',
+        reportCategory: activeEnterCategory,
+        reportMonth: document.getElementById('entryReportMonth').value || selectedMonth,
+        inspectionDate: document.getElementById('entryInspectionDate').value,
+        inspectorName: document.getElementById('entryInspectorName').value.trim(),
+        ownerName: document.getElementById('f_ownerName').value.trim(),
+        ownerMobile: document.getElementById('f_ownerMobile').value.trim(),
+        buildingAddress: (activeEnterCategory === CATEGORIES[4].id
+          ? document.getElementById('f_mcAddress').value.trim()
+          : document.getElementById('f_buildingAddress').value.trim()),
+        mouzaName: (activeEnterCategory === CATEGORIES[4].id
+          ? document.getElementById('f_mcMouza').value.trim()
+          : document.getElementById('f_mouzaName').value.trim()),
+        thanaName: (activeEnterCategory === CATEGORIES[4].id
+          ? document.getElementById('f_mcThana').value.trim()
+          : document.getElementById('f_thanaName').value.trim()),
+        buildingType: document.getElementById('f_buildingType').value,
+        previousInspectionCount: parseInt(document.getElementById('f_previousInspectionCount').value, 10) || 0,
+        authorizedOfficerInspected: document.getElementById('f_authorizedOfficerInspected').value === 'true',
+        deviationType: document.getElementById('f_deviationType').value,
+        actionTaken: document.getElementById('f_actionTaken').value,
+        previousMonthBalance: parseInt(document.getElementById('f_previousMonthBalance').value, 10) || 0,
+        currentMonthReceived: parseInt(document.getElementById('f_currentMonthReceived').value, 10) || 0,
+        totalReceived: parseInt(document.getElementById('f_totalReceived').value, 10) || 0,
+        unresolvedAtMonthEnd: parseInt(document.getElementById('f_unresolvedAtMonthEnd').value, 10) || 0,
+        unresolvedDurationCategory: document.getElementById('f_unresolvedDurationCategory').value,
+        planSubmitted: parseInt(document.getElementById('f_planSubmitted').value, 10) || 0,
+        planApproved: parseInt(document.getElementById('f_planApproved').value, 10) || 0,
+        planRejected: parseInt(document.getElementById('f_planRejected').value, 10) || 0,
+        planSentForFeedback: parseInt(document.getElementById('f_planSentForFeedback').value, 10) || 0,
+        planCompleted: parseInt(document.getElementById('f_planCompleted').value, 10) || 0,
+        planWorkInProgress: parseInt(document.getElementById('f_planWorkInProgress').value, 10) || 0,
+        planCompletedWithin45Days: parseInt(document.getElementById('f_planCompletedWithin45Days').value, 10) || 0,
+        planCompletedMoreThan45Days: parseInt(document.getElementById('f_planCompletedMoreThan45Days').value, 10) || 0,
+        occupancyPrevMonthBalance: parseInt(document.getElementById('f_occupancyPrevMonthBalance').value, 10) || 0,
+        occupancyCurrentMonthReceived: parseInt(document.getElementById('f_occupancyCurrentMonthReceived').value, 10) || 0,
+        occupancyTotalReceived: parseInt(document.getElementById('f_occupancyTotalReceived').value, 10) || 0,
+        occupancyInspectedBuildings: parseInt(document.getElementById('f_occupancyInspectedBuildings').value, 10) || 0,
+        occupancyIssuedCount: parseInt(document.getElementById('f_occupancyIssuedCount').value, 10) || 0,
+        occupancyNotIssuedCount: parseInt(document.getElementById('f_occupancyNotIssuedCount').value, 10) || 0,
+        occupancyNotIssuedReason: document.getElementById('f_occupancyNotIssuedReason').value.trim(),
+        mobileCourtBuildingStage: document.getElementById('f_mobileCourtBuildingStage').value,
+        mobileCourtFineAmount: document.getElementById('f_mobileCourtFineAmount').value.trim(),
+        mobileCourtElectricityDisconnectedCount: parseInt(document.getElementById('f_mobileCourtElectricityDisconnectedCount').value, 10) || 0,
+        mobileCourtMeterRemovedCount: parseInt(document.getElementById('f_mobileCourtMeterRemovedCount').value, 10) || 0,
+        remarks: document.getElementById('f_remarks').value.trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const idx = reports.findIndex(r => r.id === record.id);
+      if (idx >= 0) {
+        reports[idx] = record;
+      } else {
+        reports.unshift(record);
+      }
+      saveReports(reports);
+      resetEntryForm();
+      refreshAllViews();
+      alert('তথ্য সফলভাবে সংরক্ষিত হয়েছে!');
+    }
+
+    function resetEntryForm() {
+      document.getElementById('editRecordId').value = '';
+      document.getElementById('editingBadge').classList.add('hidden');
+      document.getElementById('inspectionEntryForm').reset();
+      document.getElementById('entryReportMonth').value = selectedMonth;
+      document.getElementById('entryInspectionDate').value = new Date().toISOString().slice(0, 10);
+      if (currentSession) {
+        document.getElementById('entryInspectorName').value =
+          currentSession.designation && currentSession.role !== 'admin'
+            ? `${currentSession.inspectorName} (${currentSession.designation})`
+            : (currentSession.inspectorName || '');
+      }
+    }
+
+    function deleteRecord(id) {
+      if (!confirm('আপনি কি নিশ্চিতভাবে এই তথ্যটি মুছে ফেলতে চান?')) return;
+      const reports = loadReports().filter(r => r.id !== id);
+      saveReports(reports);
+      refreshAllViews();
+    }
+
+    // ==================== REFRESH ALL VIEWS ====================
+    function getVisibleMonthReports() {
+      const all = loadReports().filter(r => r.reportMonth === selectedMonth);
+      if (currentSession?.role === 'admin') return all;
+      return all.filter(r => r.userId === currentSession?.userId || (r.inspectorName || '').includes(currentSession?.inspectorName || ''));
+    }
+
+    function refreshAllViews() {
+      document.getElementById('overviewMonthLabel').textContent = formatBanglaMonthYear(selectedMonth);
+      renderAdminSummaryCards();
+      renderRecordsTable();
+      renderUsersTable();
+      updatePdfInspectorFilterOptions();
+    }
+
+    function renderAdminSummaryCards() {
+      const container = document.getElementById('adminSummaryCards');
+      if (!container) return;
+      const monthReports = getVisibleMonthReports();
+
+      const cat1 = monthReports.filter(r => r.reportCategory === CATEGORIES[0].id);
+      const cat2 = monthReports.filter(r => r.reportCategory === CATEGORIES[1].id);
+      const cat3 = monthReports.filter(r => r.reportCategory === CATEGORIES[2].id);
+      const cat4 = monthReports.filter(r => r.reportCategory === CATEGORIES[3].id);
+      const cat5 = monthReports.filter(r => r.reportCategory === CATEGORIES[4].id);
+
+      const cards = [
+        {
+          title: '১. ভবন পরিদর্শনের তথ্য',
+          count: toBanglaDigits(cat1.length) + ' টি রেকর্ড',
+          lines: [
+            `নির্মিত ভবন: ${toBanglaDigits(cat1.filter(r => r.buildingType === 'নির্মিত').length)} টি`,
+            `নির্মাণাধীন ভবন: ${toBanglaDigits(cat1.filter(r => r.buildingType !== 'নির্মিত').length)} টি`,
+            `আইন ১৯৫২ ব্যত্যয়: ${toBanglaDigits(cat1.filter(r => (r.deviationType || '').includes('১৯৫২')).length)} টি`
+          ]
+        },
+        {
+          title: '২. ডাক ও নথি নিষ্পত্তি',
+          count: toBanglaDigits(cat2.length) + ' টি রেকর্ড',
+          lines: [
+            `মোট প্রাপ্তি: ${toBanglaDigits(cat2.reduce((s, r) => s + (r.totalReceived || 0), 0))}`,
+            `মাস শেষে অনিষ্পন্ন: ${toBanglaDigits(cat2.reduce((s, r) => s + (r.unresolvedAtMonthEnd || 0), 0))}`
+          ]
+        },
+        {
+          title: '৩. নকশা অনুমোদনের তথ্য',
+          count: toBanglaDigits(cat3.length) + ' টি রেকর্ড',
+          lines: [
+            `Submitted: ${toBanglaDigits(cat3.reduce((s, r) => s + (r.planSubmitted || 0), 0))}`,
+            `Approved: ${toBanglaDigits(cat3.reduce((s, r) => s + (r.planApproved || 0), 0))}`,
+            `Completed: ${toBanglaDigits(cat3.reduce((s, r) => s + (r.planCompleted || 0), 0))}`
+          ]
+        },
+        {
+          title: '৪. অকুপেন্সী সনদ',
+          count: toBanglaDigits(cat4.length) + ' টি রেকর্ড',
+          lines: [
+            `মোট আবেদন: ${toBanglaDigits(cat4.reduce((s, r) => s + (r.occupancyTotalReceived || 0), 0))}`,
+            `প্রদানকৃত সনদ: ${toBanglaDigits(cat4.reduce((s, r) => s + (r.occupancyIssuedCount || 0), 0))}`,
+            `প্রদান করা হয় নি: ${toBanglaDigits(cat4.reduce((s, r) => s + (r.occupancyNotIssuedCount || 0), 0))}`
+          ]
+        },
+        {
+          title: '৫. মোবাইল কোর্টের তথ্য',
+          count: toBanglaDigits(cat5.length) + ' টি মোবাইল কোর্ট',
+          lines: [
+            `বিদ্যুৎ বিচ্ছিন্ন ভবন: ${toBanglaDigits(cat5.reduce((s, r) => s + (r.mobileCourtElectricityDisconnectedCount || 0), 0))} টি`,
+            `মিটার অপসারণ: ${toBanglaDigits(cat5.reduce((s, r) => s + (r.mobileCourtMeterRemovedCount || 0), 0))} টি`
+          ]
+        }
+      ];
+
+      container.innerHTML = cards.map(c => `
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-emerald-950 text-sm">${c.title}</h4>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">${c.count}</span>
+            </div>
+            <ul class="space-y-1 text-xs text-slate-600 mt-3">
+              ${c.lines.map(l => `<li>• ${l}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderRecordsTable() {
+      const head = document.getElementById('recordsTableHead');
+      const body = document.getElementById('recordsTableBody');
+      const empty = document.getElementById('emptyRecordsState');
+      const q = (document.getElementById('searchRecordsInput')?.value || '').trim().toLowerCase();
+
+      const cols = CUSTOM_COLUMNS_BY_CAT[activeViewCategory] || CUSTOM_COLUMNS_BY_CAT[CATEGORIES[0].id];
+      head.innerHTML = `<tr>
+        <th class="p-3">ক্র.নং</th>
+        ${cols.map(c => `<th class="p-3">${c.label}</th>`).join('')}
+        <th class="p-3 text-right">অ্যাকশন</th>
+      </tr>`;
+
+      const filtered = getVisibleMonthReports().filter(r => {
+        if (r.reportCategory !== activeViewCategory) return false;
+        if (!q) return true;
+        return JSON.stringify(r).toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        body.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      body.innerHTML = filtered.map((r, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-3 font-semibold">${toBanglaDigits(idx + 1)}</td>
+          ${cols.map(c => `<td class="p-3">${formatCellValue(r, c.key)}</td>`).join('')}
+          <td class="p-3 text-right">
+            <button onclick="deleteRecord('${r.id}')" class="text-rose-600 hover:underline text-xs font-semibold cursor-pointer">মুছুন</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function formatCellValue(r, key) {
+      const val = r[key];
+      if (key === 'authorizedOfficerInspected') return val ? 'হ্যাঁ' : 'না';
+      if (typeof val === 'number') return toBanglaDigits(val);
+      return val || '-';
+    }
+
+    function renderUsersTable() {
+      const users = loadUsers();
+      const pendingCount = users.filter(u => u.approvalStatus === 'pending').length;
+      const badge = document.getElementById('pendingUsersBadge');
+      if (badge) badge.textContent = pendingCount;
+
+      const tbody = document.getElementById('usersTableBody');
+      if (!tbody) return;
+      if (users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">এখনো কোনো পরিদর্শক রেজিস্ট্রেশন করেননি।</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td class="p-3 font-semibold">${u.inspectorName}</td>
+          <td class="p-3">${u.designation || '-'}</td>
+          <td class="p-3">${u.officeName || '-'}</td>
+          <td class="p-3">${u.phoneNumber}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold ${u.approvalStatus === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${u.approvalStatus === 'approved' ? 'Approved' : 'Rejected'}
+            </span>
+          </td>
+          <td class="p-3 text-right space-x-2">
+            <button onclick="setUserStatus('${u.id}', 'approved')" class="px-2.5 py-1 rounded bg-emerald-700 text-white text-xs font-semibold cursor-pointer">Approve</button>
+            <button onclick="setUserStatus('${u.id}', 'rejected')" class="px-2.5 py-1 rounded bg-rose-600 text-white text-xs font-semibold cursor-pointer">Reject</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function setUserStatus(userId, status) {
+      const users = loadUsers().map(u => u.id === userId ? { ...u, approvalStatus: status } : u);
+      saveUsers(users);
+      renderUsersTable();
+    }
+
+    // ==================== ADMIN PDF MODAL & OFFICIAL 5-TABLE GENERATOR ====================
+    function updatePdfInspectorFilterOptions() {
+      const sel = document.getElementById('pdfInspectorFilter');
+      if (!sel) return;
+      const currentVal = sel.value;
+      const names = Array.from(new Set(loadReports().map(r => r.inspectorName).filter(Boolean)));
+      sel.innerHTML = `<option value="ALL">সকল পরিদর্শক (${toBanglaDigits(names.length)})</option>` +
+        names.map(n => `<option value="${n}">${n}</option>`).join('');
+      if (names.includes(currentVal)) sel.value = currentVal;
+    }
+
+    function openPdfModal(defaultMode) {
+      if (defaultMode) activePdfMode = defaultMode;
+      document.getElementById('pdfReportModal').classList.remove('hidden');
+      switchPdfMode(activePdfMode);
+    }
+
+    function closePdfModal() {
+      document.getElementById('pdfReportModal').classList.add('hidden');
+    }
+
+    function switchPdfMode(mode) {
+      activePdfMode = mode;
+      const isHead = mode === 'HEAD_OFFICE';
+      document.getElementById('pdfTabHeadOffice').className = isHead
+        ? 'px-4 py-2 rounded-lg text-xs md:text-sm font-bold bg-emerald-800 text-white shadow cursor-pointer'
+        : 'px-4 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 cursor-pointer';
+      document.getElementById('pdfTabCustom').className = !isHead
+        ? 'px-4 py-2 rounded-lg text-xs md:text-sm font-bold bg-emerald-800 text-white shadow cursor-pointer'
+        : 'px-4 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 cursor-pointer';
+
+      document.getElementById('headOfficeInputsBox').classList.toggle('hidden', !isHead);
+      document.getElementById('customReportInputsBox').classList.toggle('hidden', isHead);
+      renderLivePdfPreview();
+    }
+
+    function initCustomColumnsForCategory() {
+      const cat = document.getElementById('customPdfCategorySelect').value || CATEGORIES[0].id;
+      const cols = CUSTOM_COLUMNS_BY_CAT[cat] || [];
+      selectedCustomColumns = new Set(cols.map(c => c.key));
+      renderCustomColumnCheckboxes();
+      renderLivePdfPreview();
+    }
+
+    function renderCustomColumnCheckboxes() {
+      const cat = document.getElementById('customPdfCategorySelect').value || CATEGORIES[0].id;
+      const cols = CUSTOM_COLUMNS_BY_CAT[cat] || [];
+      const box = document.getElementById('customColumnCheckboxes');
+      box.innerHTML = cols.map(c => `
+        <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold cursor-pointer">
+          <input type="checkbox" ${selectedCustomColumns.has(c.key) ? 'checked' : ''} onchange="toggleSingleCustomCol('${c.key}', this.checked)" class="rounded text-emerald-700" />
+          <span>${c.label}</span>
+        </label>
+      `).join('');
+    }
+
+    function toggleSingleCustomCol(key, checked) {
+      if (checked) selectedCustomColumns.add(key);
+      else if (selectedCustomColumns.size > 1) selectedCustomColumns.delete(key);
+      renderCustomColumnCheckboxes();
+      renderLivePdfPreview();
+    }
+
+    function toggleAllCustomCols(selectAll) {
+      const cat = document.getElementById('customPdfCategorySelect').value || CATEGORIES[0].id;
+      const cols = CUSTOM_COLUMNS_BY_CAT[cat] || [];
+      if (selectAll) {
+        selectedCustomColumns = new Set(cols.map(c => c.key));
+      } else {
+        selectedCustomColumns = new Set([cols[0].key]);
+      }
+      renderCustomColumnCheckboxes();
+      renderLivePdfPreview();
+    }
+
+    function getFilteredReportsForPdf() {
+      const inspectorFilter = document.getElementById('pdfInspectorFilter')?.value || 'ALL';
+      return loadReports().filter(r => {
+        if (r.reportMonth !== selectedMonth) return false;
+        if (inspectorFilter !== 'ALL' && r.inspectorName !== inspectorFilter) return false;
+        return true;
+      });
+    }
+
+    function parseSubZones(subZoneInput, zoneLabel) {
+      const rawParts = (subZoneInput || '').split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+      if (rawParts.length > 0) return rawParts;
+      return [`${zoneLabel}/১`, `${zoneLabel}/২`];
+    }
+
+    // ==================== RENDER OFFICIAL 5-TABLE RAJUK HEAD OFFICE PDF (NO SIGNATURE) ====================
+    function renderLivePdfPreview() {
+      const area = document.getElementById('printableArea');
+      const reports = getFilteredReportsForPdf();
+      const rawZone = (document.getElementById('pdfZoneInput')?.value || '৬').trim();
+      const zoneNum = toBanglaDigits(rawZone.replace(/জোন-?/g, '').trim() || '৬');
+      const rawSubZone = (document.getElementById('pdfSubZoneInput')?.value || `${zoneNum}/১, ${zoneNum}/২`).trim();
+      const subZones = parseSubZones(rawSubZone, zoneNum);
+      const banglaMonthYear = formatBanglaMonthYear(selectedMonth);
+
+      if (activePdfMode === 'CUSTOMIZED') {
+        const cat = document.getElementById('customPdfCategorySelect').value || CATEGORIES[0].id;
+        const allCols = CUSTOM_COLUMNS_BY_CAT[cat] || [];
+        const activeCols = allCols.filter(c => selectedCustomColumns.has(c.key));
+        const catReports = reports.filter(r => r.reportCategory === cat);
+
+        area.innerHTML = `
+          <div style="text-align:center; margin-bottom:14px;">
+            <h2 style="font-size:16px; font-weight:700; text-decoration:underline; margin:0;">রাজধানী উন্নয়ন কর্তৃপক্ষ</h2>
+            <p style="font-size:12px; font-weight:600; margin:2px 0;">অথরাইজড অফিসার জোন- ${zoneNum} এর দপ্তর। (সাব-জোন: ${toBanglaDigits(rawSubZone)})</p>
+            <p style="font-size:12px; font-weight:700; margin:2px 0;">${banglaMonthYear} মাসের কাস্টমাইজড প্রতিবেদন — ${cat}</p>
+          </div>
+          <table class="rajuk-table">
+            <thead>
+              <tr>
+                <th>ক্র.নং</th>
+                ${activeCols.map(c => `<th>${c.label}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${catReports.length === 0
+                ? `<tr><td colspan="${activeCols.length + 1}">কোনো তথ্য পাওয়া যায়নি</td></tr>`
+                : catReports.map((r, i) => `
+                  <tr>
+                    <td>${toBanglaTwoDigits(i + 1)}</td>
+                    ${activeCols.map(c => `<td>${formatCellValue(r, c.key)}</td>`).join('')}
+                  </tr>
+                `).join('')}
+            </tbody>
+          </table>
+        `;
+        return;
+      }
+
+      // 1. Table 1 Data: ডাক ও নথি নিষ্পত্তি সংক্রান্ত প্রতিবেদন
+      const cat2 = reports.filter(r => r.reportCategory === CATEGORIES[1].id);
+      const t1Prev = cat2.reduce((s, r) => s + (r.previousMonthBalance || 0), 0);
+      const t1Curr = cat2.reduce((s, r) => s + (r.currentMonthReceived || 0), 0);
+      const t1Total = cat2.reduce((s, r) => s + (r.totalReceived || (r.previousMonthBalance || 0) + (r.currentMonthReceived || 0)), 0);
+      const t1Unres = cat2.reduce((s, r) => s + (r.unresolvedAtMonthEnd || 0), 0);
+      const t1Disposed = Math.max(0, t1Total - t1Unres);
+      const t1W1to2 = cat2.filter(r => (r.unresolvedDurationCategory || '').includes('১ সপ্তাহ')).reduce((s, r) => s + (r.unresolvedAtMonthEnd || 0), 0);
+      const t1W2to4 = cat2.filter(r => (r.unresolvedDurationCategory || '').includes('২ সপ্তাহ')).reduce((s, r) => s + (r.unresolvedAtMonthEnd || 0), 0);
+      const t1More1M = cat2.filter(r => (r.unresolvedDurationCategory || '').includes('এক মাসের অধিক')).reduce((s, r) => s + (r.unresolvedAtMonthEnd || 0), 0);
+
+      function filterBySubZone(list, sz, idx, totalSz) {
+        if (totalSz === 1) return list;
+        const matched = list.filter(r => (r.inspectorName || '').includes(sz) || (r.remarks || '').includes(sz));
+        if (matched.length > 0) return matched;
+        const anyMatched = list.some(r => subZones.some(s => (r.inspectorName || '').includes(s) || (r.remarks || '').includes(s)));
+        if (!anyMatched && idx === 0) return list;
+        return [];
+      }
+
+      // 2. Table 2 Data: নির্মিত বা নির্মাণাধীন ভবন পরিদর্শনের তথ্য
+      const cat1 = reports.filter(r => r.reportCategory === CATEGORIES[0].id);
+      let totT2Const = 0, totT2Under = 0, totT2Act1952 = 0, totT2Rule2008 = 0;
+      const t2RowsHtml = subZones.map((sz, idx) => {
+        const subList = filterBySubZone(cat1, sz, idx, subZones.length);
+        const constructed = subList.filter(r => r.buildingType === 'নির্মিত').length;
+        const underConst = subList.length - constructed;
+        const act1952 = subList.filter(r => (r.deviationType || '').includes('১৯৫২')).length;
+        const rule2008 = subList.filter(r => (r.deviationType || '').includes('২০০৮')).length;
+        const actions = Array.from(new Set(subList.map(r => r.actionTaken).filter(Boolean))).join(', ') || '-';
+        totT2Const += constructed;
+        totT2Under += underConst;
+        totT2Act1952 += act1952;
+        totT2Rule2008 += rule2008;
+        return `
+          <tr>
+            <td>${toBanglaTwoDigits(idx + 1)}</td>
+            <td>${toBanglaDigits(sz)}</td>
+            <td>${toBanglaTwoDigits(constructed)}</td>
+            <td>${toBanglaTwoDigits(underConst)}</td>
+            <td>${toBanglaTwoDigits(act1952)}</td>
+            <td>${toBanglaTwoDigits(rule2008)}</td>
+            <td>${actions}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 3. Table 3 Data: নকশা অনুমোদনের তথ্য
+      const cat3 = reports.filter(r => r.reportCategory === CATEGORIES[2].id);
+      let totSub = 0, totApp = 0, totRej = 0, totComp = 0, totWip = 0, totFb = 0, totW45 = 0, totM45 = 0;
+      const t3RowsHtml = subZones.map((sz, idx) => {
+        const subList = filterBySubZone(cat3, sz, idx, subZones.length);
+        const submitted = subList.reduce((s, r) => s + (r.planSubmitted || 0), 0);
+        const approved = subList.reduce((s, r) => s + (r.planApproved || 0), 0);
+        const rejected = subList.reduce((s, r) => s + (r.planRejected || 0), 0);
+        const fb = subList.reduce((s, r) => s + (r.planSentForFeedback || 0), 0);
+        const completed = subList.reduce((s, r) => s + (r.planCompleted || (r.planApproved || 0) + (r.planRejected || 0) + (r.planSentForFeedback || 0)), 0);
+        const wip = subList.reduce((s, r) => s + (r.planWorkInProgress || 0), 0);
+        const w45 = subList.reduce((s, r) => s + (r.planCompletedWithin45Days || 0), 0);
+        const m45 = subList.reduce((s, r) => s + (r.planCompletedMoreThan45Days || 0), 0);
+        const pct = completed > 0 ? Math.round((w45 * 100) / completed) + '%' : '0%';
+
+        totSub += submitted; totApp += approved; totRej += rejected; totComp += completed;
+        totWip += wip; totFb += fb; totW45 += w45; totM45 += m45;
+
+        return `
+          <tr>
+            ${idx === 0 ? `<td rowspan="${subZones.length}">জোন-${zoneNum}</td>` : ''}
+            <td>${toBanglaDigits(sz)}</td>
+            <td>${toBanglaTwoDigits(submitted)}</td>
+            <td>${toBanglaTwoDigits(approved)}</td>
+            <td>${toBanglaTwoDigits(rejected)}</td>
+            <td>${toBanglaTwoDigits(completed)}</td>
+            <td>${toBanglaTwoDigits(wip)}</td>
+            <td>${toBanglaTwoDigits(fb)}</td>
+            <td>${toBanglaTwoDigits(w45)}</td>
+            <td>${toBanglaTwoDigits(m45)}</td>
+            <td>${toBanglaDigits(pct)}</td>
+          </tr>
+        `;
+      }).join('');
+      const totPct = totComp > 0 ? Math.round((totW45 * 100) / totComp) + '%' : '0%';
+
+      // 4. Table 4 Data: অকুপেন্সী সনদ
+      const cat4 = reports.filter(r => r.reportCategory === CATEGORIES[3].id);
+      let totOccPrev = 0, totOccCurr = 0, totOccTot = 0, totOccInsp = 0, totOccIss = 0, totOccNot = 0;
+      const t4RowsHtml = subZones.map((sz, idx) => {
+        const subList = filterBySubZone(cat4, sz, idx, subZones.length);
+        const prev = subList.reduce((s, r) => s + (r.occupancyPrevMonthBalance || 0), 0);
+        const curr = subList.reduce((s, r) => s + (r.occupancyCurrentMonthReceived || 0), 0);
+        const tot = subList.reduce((s, r) => s + (r.occupancyTotalReceived || (r.occupancyPrevMonthBalance || 0) + (r.occupancyCurrentMonthReceived || 0)), 0);
+        const insp = subList.reduce((s, r) => s + (r.occupancyInspectedBuildings || 0), 0);
+        const iss = subList.reduce((s, r) => s + (r.occupancyIssuedCount || 0), 0);
+        const notIss = subList.reduce((s, r) => s + (r.occupancyNotIssuedCount || 0), 0);
+        const reasons = Array.from(new Set(subList.map(r => r.occupancyNotIssuedReason).filter(Boolean))).join(', ') || '';
+
+        totOccPrev += prev; totOccCurr += curr; totOccTot += tot;
+        totOccInsp += insp; totOccIss += iss; totOccNot += notIss;
+
+        return `
+          <tr>
+            ${idx === 0 ? `<td rowspan="${subZones.length}">জোন-${zoneNum}</td>` : ''}
+            <td>${toBanglaDigits(sz)}</td>
+            <td>${toBanglaTwoDigits(prev)}</td>
+            <td>${toBanglaTwoDigits(curr)}</td>
+            <td>${toBanglaTwoDigits(tot)}</td>
+            <td>${toBanglaTwoDigits(insp)}</td>
+            <td>${toBanglaTwoDigits(iss)}</td>
+            <td>${toBanglaTwoDigits(notIss)}</td>
+            <td>${reasons}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 5. Table 5 Data: মোবাইল কোর্টের তথ্য
+      const cat5 = reports.filter(r => r.reportCategory === CATEGORIES[4].id);
+      let totMcCount = 0, totMcConst = 0, totMcUnder = 0, totMcFine = 0, totMcElec = 0, totMcMeter = 0;
+      const t5RowsHtml = subZones.map((sz, idx) => {
+        const subList = filterBySubZone(cat5, sz, idx, subZones.length);
+        const mcCount = subList.length;
+        const mcConst = subList.filter(r => r.mobileCourtBuildingStage === 'নির্মিত').length;
+        const mcUnder = mcCount - mcConst;
+        const fineSum = subList.reduce((s, r) => {
+          const ascii = String(r.mobileCourtFineAmount || '0').replace(/[০-৯]/g, d => bnDigits.indexOf(d)).replace(/[^0-9.]/g, '');
+          return s + (parseFloat(ascii) || 0);
+        }, 0);
+        const elec = subList.reduce((s, r) => s + (r.mobileCourtElectricityDisconnectedCount || 0), 0);
+        const meter = subList.reduce((s, r) => s + (r.mobileCourtMeterRemovedCount || 0), 0);
+
+        totMcCount += mcCount; totMcConst += mcConst; totMcUnder += mcUnder;
+        totMcFine += fineSum; totMcElec += elec; totMcMeter += meter;
+
+        return `
+          <tr>
+            ${idx === 0 ? `<td rowspan="${subZones.length}">জোন-${zoneNum}</td>` : ''}
+            <td>${toBanglaDigits(sz)}</td>
+            <td>${toBanglaTwoDigits(mcCount)}</td>
+            <td>${toBanglaTwoDigits(mcConst)}</td>
+            <td>${toBanglaTwoDigits(mcUnder)}</td>
+            <td>${fineSum > 0 ? toBanglaDigits(fineSum.toLocaleString('en-IN')) + '/-' : '০'}</td>
+            <td>${toBanglaTwoDigits(elec)}</td>
+            <td>${toBanglaTwoDigits(meter)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      area.innerHTML = `
+        <div style="text-align:center; margin-bottom:10px;">
+          <div style="font-size:16px; font-weight:700; text-decoration:underline;">রাজধানী উন্নয়ন কর্তৃপক্ষ</div>
+          <div style="font-size:12px; font-weight:600;">অথরাইজড অফিসার জোন- ${zoneNum} এর দপ্তর।</div>
+          <div style="font-size:12px; font-weight:700;">${banglaMonthYear} মাসের মাসিক প্রতিবেদন</div>
+        </div>
+
+        <div class="rajuk-section-title">ডাক ও নথি নিষ্পত্তি সংক্রান্ত প্রতিবেদন:</div>
+        <table class="rajuk-table">
+          <thead>
+            <tr>
+              <th rowspan="2">গত মাসের জের</th>
+              <th rowspan="2">আলোচ্য মাসের প্রাপ্তি</th>
+              <th rowspan="2">মোট প্রাপ্তি</th>
+              <th rowspan="2">মোট নিষ্পত্তি</th>
+              <th colspan="3">মাসের শেষ কার্যদিবসে অনিষ্পন্ন ডাক সংখ্যা</th>
+            </tr>
+            <tr>
+              <th>১ সপ্তাহের অধিক অথচ ২ সপ্তাহের অধিক নয়</th>
+              <th>২ সপ্তাহের অধিক অথচ ১ মাসের অধিক নয়</th>
+              <th>এক মাসের অধিক</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${toBanglaTwoDigits(t1Prev)}</td>
+              <td>${toBanglaTwoDigits(t1Curr)}</td>
+              <td>${toBanglaTwoDigits(t1Total)}</td>
+              <td>${toBanglaTwoDigits(t1Disposed)}</td>
+              <td>${toBanglaTwoDigits(t1W1to2)}</td>
+              <td>${toBanglaTwoDigits(t1W2to4)}</td>
+              <td>${toBanglaTwoDigits(t1More1M)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="rajuk-section-title">নির্মিত বা নির্মাণাধীন ভবন পরিদর্শনের তথ্য:</div>
+        <table class="rajuk-table">
+          <thead>
+            <tr>
+              <th rowspan="2">ক্রমিক নং</th>
+              <th rowspan="2">সাব জোন</th>
+              <th colspan="2">পরিদর্শনকৃত ভবনের সংখ্যা</th>
+              <th colspan="2">ব্যত্যয়কৃত ভবনের সংখ্যা</th>
+              <th rowspan="2">গৃহীত ব্যবস্থা</th>
+            </tr>
+            <tr>
+              <th>নির্মিত</th>
+              <th>নির্মাণাধীন</th>
+              <th>ইমারত নির্মাণ আইন ১৯৫২</th>
+              <th>ইমারত নির্মাণ বিধিমালা ২০০৮</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t2RowsHtml}
+            <tr style="font-weight:700;">
+              <td colspan="2">মোট =</td>
+              <td>${toBanglaTwoDigits(totT2Const)}</td>
+              <td>${toBanglaTwoDigits(totT2Under)}</td>
+              <td>${toBanglaTwoDigits(totT2Act1952)}</td>
+              <td>${toBanglaTwoDigits(totT2Rule2008)}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="rajuk-section-title">নকশা অনুমোদনের তথ্য:</div>
+        <table class="rajuk-table">
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Sub Zone</th>
+              <th>Submitted</th>
+              <th>Approved</th>
+              <th>Rejected</th>
+              <th>Completed (Approved+Rejected+Sent for Applicants Feedback)</th>
+              <th>Work In Progress</th>
+              <th>Sent For Applicants Feedback</th>
+              <th>Completed Within 45 Working Days</th>
+              <th>Completed In More Than 45 Working Days</th>
+              <th>Percentage of Completed Within 45 Working Days</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t3RowsHtml}
+            <tr style="font-weight:700;">
+              <td colspan="2">মোট =</td>
+              <td>${toBanglaTwoDigits(totSub)}</td>
+              <td>${toBanglaTwoDigits(totApp)}</td>
+              <td>${toBanglaTwoDigits(totRej)}</td>
+              <td>${toBanglaTwoDigits(totComp)}</td>
+              <td>${toBanglaTwoDigits(totWip)}</td>
+              <td>${toBanglaTwoDigits(totFb)}</td>
+              <td>${toBanglaTwoDigits(totW45)}</td>
+              <td>${toBanglaTwoDigits(totM45)}</td>
+              <td>${toBanglaDigits(totPct)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="rajuk-section-title">অকুপেন্সী সনদ:</div>
+        <table class="rajuk-table">
+          <thead>
+            <tr>
+              <th>জোন</th>
+              <th>সাব জোন</th>
+              <th>পূর্ববর্তী মাসের জের</th>
+              <th>বর্তমান মাসে প্রাপ্ত আবেদনের সংখ্যা</th>
+              <th>জেরসহ মোট আবেদন সংখ্যা</th>
+              <th>পরিদর্শনকৃত ভবনের সংখ্যা</th>
+              <th>কতটি Occupancy Certificate প্রদান করা হয়েছে</th>
+              <th>কতটি Occupancy Certificate প্রদান করা হয় নি</th>
+              <th>Occupancy Certificate প্রদান না করার কারণ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t4RowsHtml}
+            <tr style="font-weight:700;">
+              <td colspan="2">মোট =</td>
+              <td>${toBanglaTwoDigits(totOccPrev)}</td>
+              <td>${toBanglaTwoDigits(totOccCurr)}</td>
+              <td>${toBanglaTwoDigits(totOccTot)}</td>
+              <td>${toBanglaTwoDigits(totOccInsp)}</td>
+              <td>${toBanglaTwoDigits(totOccIss)}</td>
+              <td>${toBanglaTwoDigits(totOccNot)}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="rajuk-section-title">মোবাইল কোর্টের তথ্য:</div>
+        <table class="rajuk-table">
+          <thead>
+            <tr>
+              <th rowspan="2">জোন</th>
+              <th rowspan="2">সাব জোন</th>
+              <th rowspan="2">পরিচালিত মোবাইল কোর্ট সংখ্যা</th>
+              <th colspan="2">ভবনের সংখ্যা</th>
+              <th rowspan="2">জরিমানার পরিমাণ</th>
+              <th rowspan="2">বিদ্যুৎ সংযোগ বিচ্ছিন্নকৃত ভবনের সংখ্যা</th>
+              <th rowspan="2">মিটার অপসারণ সংখ্যা</th>
+            </tr>
+            <tr>
+              <th>নির্মিত</th>
+              <th>নির্মাণাধীন</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t5RowsHtml}
+            <tr style="font-weight:700;">
+              <td colspan="2">মোট =</td>
+              <td>${toBanglaTwoDigits(totMcCount)}</td>
+              <td>${toBanglaTwoDigits(totMcConst)}</td>
+              <td>${toBanglaTwoDigits(totMcUnder)}</td>
+              <td>${totMcFine > 0 ? toBanglaDigits(totMcFine.toLocaleString('en-IN')) + '/-' : '০'}</td>
+              <td>${toBanglaTwoDigits(totMcElec)}</td>
+              <td>${toBanglaTwoDigits(totMcMeter)}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ==================== PDF DOWNLOAD & WHATSAPP SHARE ====================
+    async function downloadPdfFile() {
+      const element = document.getElementById('printableArea');
+      const fileName = activePdfMode === 'HEAD_OFFICE'
+        ? `RAJUK_Head_Office_Report_${selectedMonth}.pdf`
+        : `RAJUK_Custom_Report_${selectedMonth}.pdf`;
+
+      if (window.html2pdf) {
+        const opt = {
+          margin: [8, 8, 8, 8],
+          filename: fileName,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        await html2pdf().set(opt).from(element).save();
+      } else {
+        window.print();
+      }
+    }
+
+    async function sharePdfOnWhatsApp() {
+      const element = document.getElementById('printableArea');
+      const rawZone = (document.getElementById('pdfZoneInput')?.value || '৬').trim();
+      const rawSubZone = (document.getElementById('pdfSubZoneInput')?.value || '৬/১, ৬/২').trim();
+      const fileName = activePdfMode === 'HEAD_OFFICE'
+        ? `RAJUK_Head_Office_Report_${selectedMonth}.pdf`
+        : `RAJUK_Custom_Report_${selectedMonth}.pdf`;
+      const shareText = `রাজধানী উন্নয়ন কর্তৃপক্ষ (জোন-${rawZone}, সাব-জোন: ${rawSubZone}) - ${formatBanglaMonthYear(selectedMonth)} মাসের মাসিক প্রতিবেদন (${fileName})`;
+
+      try {
+        if (window.html2pdf && navigator.canShare) {
+          const opt = {
+            margin: [8, 8, 8, 8],
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+          const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: fileName,
+              text: shareText,
+              files: [file]
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Web Share API fallback:', e);
+      }
+
+      await downloadPdfFile();
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText + ' (পিডিএফ ফাইলটি ডাউনলোড হয়েছে, অনুগ্রহ করে অ্যাটাচ করুন)')}`;
+      window.open(waUrl, '_blank');
+    }
+
+    // ==================== BACKUP & RESTORE ====================
+    function exportBackupJson() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        reports: loadReports(),
+        users: loadUsers()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `RAJUK_Report_Backup_${selectedMonth}.json`;
+      a.click();
+    }
+
+    function importBackupJson(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data.reports)) saveReports(data.reports);
+          if (Array.isArray(data.users)) saveUsers(data.users);
+          refreshAllViews();
+          alert('ডাটা সফলভাবে রিস্টোর করা হয়েছে!');
+        } catch (err) {
+          alert('ফাইলটি সঠিক ব্যাকআপ JSON নয়।');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>

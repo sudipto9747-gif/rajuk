@@ -1,0 +1,338 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Stores user phone number, SHA-256 password hash, and admin approval status for registration and login.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user UID."
+        },
+        "email": {
+          "type": "string",
+          "description": "Google account email of the user."
+        },
+        "inspectorName": {
+          "type": "string",
+          "description": "Full name of the building inspector/user."
+        },
+        "designation": {
+          "type": "string",
+          "description": "Designation or zone of the inspector."
+        },
+        "officeName": {
+          "type": "string",
+          "description": "Office or authority name."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Registered mobile/phone number used for login."
+        },
+        "passwordHash": {
+          "type": "string",
+          "description": "64-character lowercase hex SHA-256 hash of the user's password."
+        },
+        "approvalStatus": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "Registration approval status controlled by Admin."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["inspector", "admin"],
+          "description": "Role of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of registration (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "email",
+        "inspectorName",
+        "designation",
+        "officeName",
+        "phoneNumber",
+        "passwordHash",
+        "approvalStatus",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted admin registry document.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Admin UID."
+        },
+        "email": {
+          "type": "string",
+          "description": "Admin email."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp."
+        }
+      },
+      "required": ["userId", "email", "createdAt"]
+    },
+    "InspectorProfile": {
+      "title": "InspectorProfile",
+      "description": "Stores default inspector profile information for pre-filling monthly building inspection reports.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid."
+        },
+        "inspectorName": {
+          "type": "string",
+          "description": "Default Building Inspector Name (ইমারত পরিদর্শকের নাম)."
+        },
+        "designation": {
+          "type": "string",
+          "description": "Inspector designation or zone."
+        },
+        "officeName": {
+          "type": "string",
+          "description": "Office or authority name."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "inspectorName",
+        "designation",
+        "officeName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InspectionReport": {
+      "title": "InspectionReport",
+      "description": "Individual building inspection record used to generate the monthly office inspection report.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid."
+        },
+        "reportCategory": {
+          "type": "string",
+          "description": "Category of the data entry (one of the 5 Enter Data options)."
+        },
+        "reportMonth": {
+          "type": "string",
+          "description": "Report month in YYYY-MM format (e.g. 2026-10)."
+        },
+        "inspectionDate": {
+          "type": "string",
+          "description": "Date of building inspection in YYYY-MM-DD format."
+        },
+        "inspectorName": {
+          "type": "string",
+          "description": "ইমারত পরিদর্শকের নাম (Building Inspector Name)."
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "ভবন মালিকের নাম (Building Owner Name)."
+        },
+        "buildingAddress": {
+          "type": "string",
+          "description": "ভবনের ঠিকানা (Building Address)."
+        },
+        "mouzaName": {
+          "type": "string",
+          "description": "মৌজার নাম (Mouza Name)."
+        },
+        "thanaName": {
+          "type": "string",
+          "description": "থানার নাম (Thana Name)."
+        },
+        "ownerMobile": {
+          "type": "string",
+          "description": "মালিকের মোবাইল নাম্বার (Owner Mobile Number)."
+        },
+        "buildingType": {
+          "type": "string",
+          "description": "ভবনের ধরণ (Building Type)."
+        },
+        "previousInspectionCount": {
+          "type": "integer",
+          "description": "আগে কতবার পরিদর্শন করা হয়েছে (Previous Inspection Count)."
+        },
+        "authorizedOfficerInspected": {
+          "type": "boolean",
+          "description": "অথরাইজড অফিসার পরিদর্শন করেছে ? (Has Authorized Officer Inspected?)."
+        },
+        "deviationType": {
+          "type": "string",
+          "description": "ব্যত্যয়কৃত ভবনের ধরণ (Type of Deviated Building)."
+        },
+        "actionTaken": {
+          "type": "string",
+          "description": "গৃহীত ব্যবস্থা (Action Taken)."
+        },
+        "previousMonthBalance": {
+          "type": "integer",
+          "description": "গত মাসের জের (Previous month balance for Unresolved Report)."
+        },
+        "currentMonthReceived": {
+          "type": "integer",
+          "description": "আলোচ্য মাসের প্রাপ্তি (Current month received for Unresolved Report)."
+        },
+        "totalReceived": {
+          "type": "integer",
+          "description": "মোট প্রাপ্তি (Total received for Unresolved Report)."
+        },
+        "unresolvedAtMonthEnd": {
+          "type": "integer",
+          "description": "মাসের শেষ কার্যদিবসে অনিষ্পন্ন সংখ্যা (Unresolved count at last working day of month)."
+        },
+        "unresolvedDurationCategory": {
+          "type": "string",
+          "description": "মাসের শেষ কার্যদিবসে অনিষ্পন্ন অপশন (১ সপ্তাহের অধিক অথচ ২ সপ্তাহের অধিক নয় / ২ সপ্তাহের অধিক অথচ ১ মাসের অধিক নয় / এক মাসের অধিক)."
+        },
+        "planSubmitted": {
+          "type": "integer",
+          "description": "Submitted (নকশা অনুমোদনের তথ্য)."
+        },
+        "planApproved": {
+          "type": "integer",
+          "description": "Approved (নকশা অনুমোদনের তথ্য)."
+        },
+        "planRejected": {
+          "type": "integer",
+          "description": "Rejected (নকশা অনুমোদনের তথ্য)."
+        },
+        "planCompleted": {
+          "type": "integer",
+          "description": "Completed (Approved + Rejected + Sent for Applicants Feedback)."
+        },
+        "planWorkInProgress": {
+          "type": "integer",
+          "description": "Work In Progress (নকশা অনুমোদনের তথ্য)."
+        },
+        "planSentForFeedback": {
+          "type": "integer",
+          "description": "Sent For Applicants Feedback (নকশা অনুমোদনের তথ্য)."
+        },
+        "planCompletedWithin45Days": {
+          "type": "integer",
+          "description": "Completed Within 45 Working Days (নকশা অনুমোদনের তথ্য)."
+        },
+        "planCompletedMoreThan45Days": {
+          "type": "integer",
+          "description": "Completed In More Than 45 Working Days (নকশা অনুমোদনের তথ্য)."
+        },
+        "occupancyPrevMonthBalance": {
+          "type": "integer",
+          "description": "পূর্ববর্তী মাসের জের (অকুপেন্সী সনদ)."
+        },
+        "occupancyCurrentMonthReceived": {
+          "type": "integer",
+          "description": "বর্তমান মাসে প্রাপ্ত আবেদনের সংখ্যা (অকুপেন্সী সনদ)."
+        },
+        "occupancyTotalReceived": {
+          "type": "integer",
+          "description": "জেরসহ মোট আবেদন সংখ্যা (অকুপেন্সী সনদ)."
+        },
+        "occupancyInspectedBuildings": {
+          "type": "integer",
+          "description": "পরিদর্শনকৃত ভবনের সংখ্যা (অকুপেন্সী সনদ)."
+        },
+        "occupancyIssuedCount": {
+          "type": "integer",
+          "description": "কতটি Occupancy Certificate প্রদান করা হয়েছে (অকুপেন্সী সনদ)."
+        },
+        "occupancyNotIssuedCount": {
+          "type": "integer",
+          "description": "কতটি Occupancy Certificate প্রদান করা হয় নি (অকুপেন্সী সনদ)."
+        },
+        "occupancyNotIssuedReason": {
+          "type": "string",
+          "description": "Occupancy Certificate প্রদান না করার কারণ (অকুপেন্সী সনদ)."
+        },
+        "remarks": {
+          "type": "string",
+          "description": "মন্তব্য বা অতিরিক্ত তথ্য (Remarks)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when record was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when record was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "reportMonth",
+        "inspectionDate",
+        "inspectorName",
+        "ownerName",
+        "buildingAddress",
+        "ownerMobile",
+        "buildingType",
+        "previousInspectionCount",
+        "authorizedOfficerInspected",
+        "deviationType",
+        "actionTaken",
+        "remarks",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/user_accounts/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserAccount"
+      },
+      "description": "User registration accounts with phone number, password hash, and admin approval status."
+    },
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/AdminRecord"
+      },
+      "description": "Trusted admin UID registry."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/InspectorProfile"
+      },
+      "description": "Per-user inspector profile settings."
+    },
+    "/users/{userId}/inspections/{inspectionId}": {
+      "schema": {
+        "$ref": "#/entities/InspectionReport"
+      },
+      "description": "Per-user building inspection records for monthly report generation."
+    }
+  }
+}

@@ -1,0 +1,249 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Checks if the incoming UserAccount payload matches the designated Admin credentials
+    // Phone: 01767563095, Password: 889747 (SHA-256: 8f7d4d88e66e3b732938d940368541407d91c2c3d24fc7b73ab99e4594bcd4ae)
+    function isValidAdminCredentialActivation(data) {
+      return data.phoneNumber == '01767563095' &&
+             data.passwordHash == '8f7d4d88e66e3b732938d940368541407d91c2c3d24fc7b73ab99e4594bcd4ae' &&
+             data.role == 'admin' &&
+             data.approvalStatus == 'approved';
+    }
+
+    function isValidUserAccount(data, userId) {
+      return data.keys().hasAll([
+                'userId',
+                'email',
+                'inspectorName',
+                'designation',
+                'officeName',
+                'phoneNumber',
+                'passwordHash',
+                'approvalStatus',
+                'role',
+                'createdAt',
+                'updatedAt'
+              ]) &&
+              data.keys().hasOnly([
+                'userId',
+                'email',
+                'inspectorName',
+                'designation',
+                'officeName',
+                'phoneNumber',
+                'passwordHash',
+                'approvalStatus',
+                'role',
+                'createdAt',
+                'updatedAt'
+              ]) &&
+              data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+              data.userId == userId &&
+              data.email is string && data.email.size() <= 150 &&
+              data.inspectorName is string && data.inspectorName.size() <= 120 &&
+              data.designation is string && data.designation.size() <= 120 &&
+              data.officeName is string && data.officeName.size() <= 150 &&
+              data.phoneNumber is string && data.phoneNumber.size() >= 5 && data.phoneNumber.size() <= 20 &&
+              data.phoneNumber.matches('^[0-9+\\-() ]+$') &&
+              data.passwordHash is string && data.passwordHash.size() == 64 &&
+              data.passwordHash.matches('^[a-f0-9]{64}$') &&
+              data.approvalStatus is string && data.approvalStatus in ['pending', 'approved', 'rejected'] &&
+              data.role is string && data.role in ['inspector', 'admin'] &&
+              data.createdAt is timestamp && data.createdAt <= request.time &&
+              data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidInspectorProfile(data, userId) {
+      return data.keys().hasAll([
+                'userId',
+                'inspectorName',
+                'designation',
+                'officeName',
+                'createdAt',
+                'updatedAt'
+              ]) &&
+              data.keys().hasOnly([
+                'userId',
+                'inspectorName',
+                'designation',
+                'officeName',
+                'createdAt',
+                'updatedAt'
+              ]) &&
+              data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+              data.userId == userId &&
+              data.inspectorName is string && data.inspectorName.size() >= 1 && data.inspectorName.size() <= 120 &&
+              data.designation is string && data.designation.size() <= 120 &&
+              data.officeName is string && data.officeName.size() <= 150 &&
+              data.createdAt is timestamp && data.createdAt <= request.time &&
+              data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidInspectionReport(data, userId) {
+      return data.keys().hasAll([
+                'userId',
+                'reportMonth',
+                'inspectionDate',
+                'inspectorName',
+                'ownerName',
+                'buildingAddress',
+                'ownerMobile',
+                'buildingType',
+                'previousInspectionCount',
+                'authorizedOfficerInspected',
+                'deviationType',
+                'actionTaken',
+                'remarks',
+                'createdAt',
+                'updatedAt'
+              ]) &&
+              data.keys().hasOnly([
+                'userId',
+                'reportCategory',
+                'reportMonth',
+                'inspectionDate',
+                'inspectorName',
+                'ownerName',
+                'buildingAddress',
+                'mouzaName',
+                'thanaName',
+                'ownerMobile',
+                'buildingType',
+                'previousInspectionCount',
+                'authorizedOfficerInspected',
+                'deviationType',
+                'actionTaken',
+                'previousMonthBalance',
+                'currentMonthReceived',
+                'totalReceived',
+                'currentMonthSettled',
+                'totalSettled',
+                'unresolvedBalance',
+                'unresolvedDurationCategory',
+                'unresolvedCourtCases',
+                'unresolvedOfficialProcess',
+                'unresolvedUnderInvestigation',
+                'unresolvedOtherReason',
+                'planCompletedWithin30Days',
+                'planCompleted30To45Days',
+                'planCompletedMoreThan45Days',
+                'occupancyPrevMonthBalance',
+                'occupancyPreviousMonthBalance',
+                'occupancyCurrentMonthReceived',
+                'occupancyTotalReceived',
+                'occupancyTotalApplications',
+                'occupancyInspectedBuildings',
+                'occupancyIssuedCount',
+                'occupancyNotIssuedCount',
+                'occupancyNotIssuedReason',
+                'mobileCourtDate',
+                'magistrateName',
+                'mobileCourtFineAmount',
+                'mobileCourtMeterCut',
+                'mobileCourtMeterCount',
+                'mobileCourtUndertakingSubmitted',
+                'remarks',
+                'createdAt',
+                'updatedAt'
+              ]) &&
+              data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+              data.userId == userId &&
+              (!('reportCategory' in data) || (data.reportCategory is string && data.reportCategory.size() <= 120)) &&
+              data.reportMonth is string && data.reportMonth.size() == 7 && data.reportMonth.matches('^[0-9]{4}-[0-9]{2}$') &&
+              data.inspectionDate is string && data.inspectionDate.size() >= 7 && data.inspectionDate.size() <= 20 &&
+              data.inspectorName is string && data.inspectorName.size() >= 1 && data.inspectorName.size() <= 120 &&
+              data.ownerName is string && data.ownerName.size() <= 200 &&
+              data.buildingAddress is string && data.buildingAddress.size() <= 300 &&
+              (!('mouzaName' in data) || (data.mouzaName is string && data.mouzaName.size() <= 120)) &&
+              (!('thanaName' in data) || (data.thanaName is string && data.thanaName.size() <= 120)) &&
+              data.ownerMobile is string && data.ownerMobile.size() <= 40 &&
+              data.buildingType is string && data.buildingType.size() <= 80 &&
+              data.previousInspectionCount is int && data.previousInspectionCount >= 0 && data.previousInspectionCount <= 10000 &&
+              data.authorizedOfficerInspected is bool &&
+              data.deviationType is string && data.deviationType.size() <= 200 &&
+              data.actionTaken is string && data.actionTaken.size() <= 200 &&
+              (!('previousMonthBalance' in data) || (data.previousMonthBalance is int && data.previousMonthBalance >= 0 && data.previousMonthBalance <= 1000000)) &&
+              (!('currentMonthReceived' in data) || (data.currentMonthReceived is int && data.currentMonthReceived >= 0 && data.currentMonthReceived <= 1000000)) &&
+              (!('totalReceived' in data) || (data.totalReceived is int && data.totalReceived >= 0 && data.totalReceived <= 1000000)) &&
+              (!('currentMonthSettled' in data) || (data.currentMonthSettled is int && data.currentMonthSettled >= 0 && data.currentMonthSettled <= 1000000)) &&
+              (!('totalSettled' in data) || (data.totalSettled is int && data.totalSettled >= 0 && data.totalSettled <= 1000000)) &&
+              (!('unresolvedBalance' in data) || (data.unresolvedBalance is int && data.unresolvedBalance >= 0 && data.unresolvedBalance <= 1000000)) &&
+              (!('unresolvedDurationCategory' in data) || (data.unresolvedDurationCategory is string && data.unresolvedDurationCategory.size() <= 120)) &&
+              (!('unresolvedCourtCases' in data) || (data.unresolvedCourtCases is int && data.unresolvedCourtCases >= 0 && data.unresolvedCourtCases <= 1000000)) &&
+              (!('unresolvedOfficialProcess' in data) || (data.unresolvedOfficialProcess is int && data.unresolvedOfficialProcess >= 0 && data.unresolvedOfficialProcess <= 1000000)) &&
+              (!('unresolvedUnderInvestigation' in data) || (data.unresolvedUnderInvestigation is int && data.unresolvedUnderInvestigation >= 0 && data.unresolvedUnderInvestigation <= 1000000)) &&
+              (!('unresolvedOtherReason' in data) || (data.unresolvedOtherReason is int && data.unresolvedOtherReason >= 0 && data.unresolvedOtherReason <= 1000000)) &&
+              (!('planCompletedWithin30Days' in data) || (data.planCompletedWithin30Days is int && data.planCompletedWithin30Days >= 0 && data.planCompletedWithin30Days <= 1000000)) &&
+              (!('planCompleted30To45Days' in data) || (data.planCompleted30To45Days is int && data.planCompleted30To45Days >= 0 && data.planCompleted30To45Days <= 1000000)) &&
+              (!('planCompletedMoreThan45Days' in data) || (data.planCompletedMoreThan45Days is int && data.planCompletedMoreThan45Days >= 0 && data.planCompletedMoreThan45Days <= 1000000)) &&
+              (!('occupancyPrevMonthBalance' in data) || (data.occupancyPrevMonthBalance is int && data.occupancyPrevMonthBalance >= 0 && data.occupancyPrevMonthBalance <= 1000000)) &&
+              (!('occupancyPreviousMonthBalance' in data) || (data.occupancyPreviousMonthBalance is int && data.occupancyPreviousMonthBalance >= 0 && data.occupancyPreviousMonthBalance <= 1000000)) &&
+              (!('occupancyCurrentMonthReceived' in data) || (data.occupancyCurrentMonthReceived is int && data.occupancyCurrentMonthReceived >= 0 && data.occupancyCurrentMonthReceived <= 1000000)) &&
+              (!('occupancyTotalReceived' in data) || (data.occupancyTotalReceived is int && data.occupancyTotalReceived >= 0 && data.occupancyTotalReceived <= 1000000)) &&
+              (!('occupancyInspectedBuildings' in data) || (data.occupancyInspectedBuildings is int && data.occupancyInspectedBuildings >= 0 && data.occupancyInspectedBuildings <= 1000000)) &&
+              (!('occupancyIssuedCount' in data) || (data.occupancyIssuedCount is int && data.occupancyIssuedCount >= 0 && data.occupancyIssuedCount <= 1000000)) &&
+              (!('occupancyNotIssuedCount' in data) || (data.occupancyNotIssuedCount is int && data.occupancyNotIssuedCount >= 0 && data.occupancyNotIssuedCount <= 1000000)) &&
+              (!('occupancyNotIssuedReason' in data) || (data.occupancyNotIssuedReason is string && data.occupancyNotIssuedReason.size() <= 300)) &&
+              (!('occupancyPreviousMonthBalance' in data) || (data.occupancyPreviousMonthBalance is int && data.occupancyPreviousMonthBalance >= 0 && data.occupancyPreviousMonthBalance <= 1000000)) &&
+              (!('occupancyTotalApplications' in data) || (data.occupancyTotalApplications is int && data.occupancyTotalApplications >= 0 && data.occupancyTotalApplications <= 1000000)) &&
+              (!('mobileCourtDate' in data) || (data.mobileCourtDate is string && data.mobileCourtDate.size() <= 40)) &&
+              (!('magistrateName' in data) || (data.magistrateName is string && data.magistrateName.size() <= 150)) &&
+              (!('mobileCourtFineAmount' in data) || (data.mobileCourtFineAmount is int && data.mobileCourtFineAmount >= 0 && data.mobileCourtFineAmount <= 100000000)) &&
+              (!('mobileCourtMeterCut' in data) || (data.mobileCourtMeterCut is bool)) &&
+              (!('mobileCourtMeterCount' in data) || (data.mobileCourtMeterCount is int && data.mobileCourtMeterCount >= 0 && data.mobileCourtMeterCount <= 10000)) &&
+              (!('mobileCourtUndertakingSubmitted' in data) || (data.mobileCourtUndertakingSubmitted is bool)) &&
+              data.remarks is string && data.remarks.size() <= 500 &&
+              data.createdAt is timestamp && data.createdAt <= request.time &&
+              data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Checks if the designated Admin (01767563095) has logged in and activated their admin account
+    function isActivatedAdminPresent() {
+      return exists(/databases/$(database)/documents/user_accounts/phone_01767563095) &&
+             get(/databases/$(database)/documents/user_accounts/phone_01767563095).data.role == 'admin' &&
+             get(/databases/$(database)/documents/user_accounts/phone_01767563095).data.approvalStatus == 'approved';
+    }
+
+    match /user_accounts/{userId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(userId);
+    }
+
+    match /system_options/{optionId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(optionId);
+    }
+
+    match /tasks/{taskId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(taskId);
+    }
+
+    match /users/{userId} {
+      allow get, list: if isValidId(userId);
+      allow create, update, delete: if isValidId(userId);
+
+      match /inspections/{inspectionId} {
+        allow get, list: if isValidId(userId);
+        allow create, update, delete: if isValidId(userId) && isValidId(inspectionId);
+      }
+    }
+  }
+}

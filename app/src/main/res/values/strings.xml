@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Office Monthly Report</string>
+    <string name="title_bangla">ইমারত পরিদর্শনের মাসিক রিপোর্ট</string>
+    <string name="subtitle_bangla">অফিসিয়াল ভবন পরিদর্শন ও মাসিক প্রতিবেদন জেনারেটর</string>
+    <string name="sign_in_with_google">Sign in with Google (গুগল দিয়ে সাইন ইন)</string>
+    <string name="field_inspector_name">ইমারত পরিদর্শকের নাম</string>
+    <string name="field_owner_name">ভবন মালিকের নাম</string>
+    <string name="field_building_address">ভবনের ঠিকানা</string>
+    <string name="field_owner_mobile">মালিকের মোবাইল নাম্বার</string>
+    <string name="field_building_type">ভবনের ধরণ</string>
+    <string name="field_prev_inspections">আগে কতবার পরিদর্শন করা হয়েছে</string>
+    <string name="field_auth_officer">অথরাইজড অফিসার পরিদর্শন করেছে ?</string>
+    <string name="field_deviation_type">ব্যত্যয়কৃত ভবনের ধরণ</string>
+    <string name="field_action_taken">গৃহীত ব্যবস্থা</string>
+    <string name="action_add_inspection">নতুন পরিদর্শন যুক্ত করুন</string>
+    <string name="action_generate_report">মাসিক রিপোর্ট জেনারেট</string>
+    <string name="action_print_pdf">PDF প্রিন্ট / সেভ করুন</string>
+    <string name="action_share_csv">Excel (CSV) শেয়ার</string>
+    <string name="action_share_text">রিপোর্ট টেক্সট শেয়ার</string>
+</resources>

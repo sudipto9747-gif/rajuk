@@ -1,0 +1,6 @@
+{
+  "name": "Office Monthly Report",
+  "description": "An office monthly report generator app to log work items, KPIs, project progress, and expenses, and export structured monthly summaries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
