@@ -3,6 +3,7 @@ package com.example.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.model.ADMIN_LOGIN_PHONE
 import com.example.data.model.AppOption
 import com.example.data.model.AssignedTask
 import com.example.data.model.BOOTSTRAPPED_ADMIN_EMAIL
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -124,8 +126,11 @@ class InspectionViewModel(
         )
 
     private val allUserAccountsStream: StateFlow<List<UserAccount>> =
-        _isPhoneLoggedIn.flatMapLatest { loggedIn ->
-            if (loggedIn) {
+        combine(_isPhoneLoggedIn, _activeUserId) { loggedIn, uid ->
+            loggedIn || uid.isNotBlank()
+        }.distinctUntilChanged()
+        .flatMapLatest { active ->
+            if (active) {
                 repository.observeAllUserAccountsForAdmin()
                     .catch { error ->
                         Log.w(TAG, "Error observing all user accounts", error)
@@ -140,12 +145,45 @@ class InspectionViewModel(
             initialValue = emptyList()
         )
 
+    private data class InspectionObservationKey(
+        val uid: String,
+        val isAdmin: Boolean,
+        val knownUserIds: List<String>
+    )
+
     private val inspectionsStream: StateFlow<UiState<List<InspectionReport>>> =
-        _activeUserId.flatMapLatest { uid ->
-            if (uid.isBlank()) {
+        combine(
+            _activeUserId,
+            userAccountState,
+            allUserAccountsStream
+        ) { uid, accState, allAccounts ->
+            val account = (accState as? UiState.Success)?.data
+            val isAdmin = isBootstrappedAdmin ||
+                account?.role == "admin" ||
+                uid == PasswordHasher.phoneToUserId(ADMIN_LOGIN_PHONE)
+            val allUids = (allAccounts.map { it.userId } + uid)
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .sorted()
+            InspectionObservationKey(
+                uid = uid,
+                isAdmin = isAdmin,
+                knownUserIds = if (isAdmin) allUids else listOf(uid)
+            )
+        }.distinctUntilChanged()
+        .flatMapLatest { key ->
+            if (key.uid.isBlank()) {
                 flowOf(UiState.Success(emptyList()))
+            } else if (key.isAdmin) {
+                repository.observeAllInspectionsForAdmin(key.knownUserIds)
+                    .map<List<InspectionReport>, UiState<List<InspectionReport>>> { UiState.Success(it) }
+                    .catch { error ->
+                        Log.w(TAG, "Error observing all inspections for admin", error)
+                        emit(UiState.Error(error.localizedMessage ?: "তথ্য লোড করতে সমস্যা হয়েছে"))
+                    }
             } else {
-                repository.observeInspections(uid)
+                repository.observeInspections(key.uid)
                     .map<List<InspectionReport>, UiState<List<InspectionReport>>> { UiState.Success(it) }
                     .catch { error ->
                         Log.w(TAG, "Error observing inspections", error)
@@ -244,8 +282,19 @@ class InspectionViewModel(
             is UiState.Error -> UiState.Error(inspectionsResult.message)
             is UiState.Success -> {
                 val userAccount = (accState as? UiState.Success)?.data
-                val isAdmin = isBootstrappedAdmin || userAccount?.role == "admin"
-                val monthReports = inspectionsResult.data.filter { it.reportMonth == month }
+                val isAdmin = isBootstrappedAdmin ||
+                    userAccount?.role == "admin" ||
+                    _activeUserId.value == PasswordHasher.phoneToUserId(ADMIN_LOGIN_PHONE)
+                val accountsByUid = allAccounts.associateBy { it.userId }
+                val enrichedAllTimeReports = inspectionsResult.data.map { report ->
+                    val accountName = accountsByUid[report.userId]?.inspectorName?.trim().orEmpty()
+                    if (accountName.isNotBlank() && (report.inspectorName.isBlank() || report.inspectorName == "ইমারত পরিদর্শক")) {
+                        report.copy(inspectorName = accountName)
+                    } else {
+                        report
+                    }
+                }
+                val monthReports = enrichedAllTimeReports.filter { it.reportMonth == month }
                 val stats = InspectionPresets.computeStats(monthReports)
                 val q = query.trim().lowercase(Locale.getDefault())
                 val filtered = monthReports.filter { item ->
@@ -284,7 +333,7 @@ class InspectionViewModel(
                         selectedMonth = month,
                         allMonthReports = monthReports,
                         filteredReports = filtered,
-                        allTimeReports = inspectionsResult.data,
+                        allTimeReports = enrichedAllTimeReports,
                         stats = stats,
                         profile = profile,
                         userAccount = userAccount,
@@ -826,9 +875,10 @@ class InspectionViewModel(
             val uid = _activeUserId.value
             val resolvedCategory = reportCategory.trim().ifBlank { "ভবন পরিদর্শন সম্পর্কিত রিপোর্ট" }
             val result = if (existingReport != null && existingReport.id.isNotBlank()) {
+                val ownerUid = existingReport.userId.ifBlank { uid }
                 repository.updateInspection(
                     existingReport.copy(
-                        userId = uid.ifBlank { existingReport.userId },
+                        userId = ownerUid,
                         reportCategory = resolvedCategory,
                         reportMonth = reportMonth.trim(),
                         inspectionDate = inspectionDate.trim(),
@@ -952,9 +1002,9 @@ class InspectionViewModel(
         }
     }
 
-    fun deleteInspection(inspectionId: String) {
+    fun deleteInspection(inspectionId: String, reportUserId: String = "") {
         viewModelScope.launch {
-            val uid = _activeUserId.value
+            val uid = reportUserId.ifBlank { _activeUserId.value }
             val res = repository.deleteInspection(inspectionId, userId = uid)
             res.fold(
                 onSuccess = { _statusMessage.value = "পরিদর্শন রেকর্ডটি মুছে ফেলা হয়েছে" },
@@ -966,12 +1016,14 @@ class InspectionViewModel(
     fun saveProfile(inspectorName: String, designation: String, officeName: String) {
         viewModelScope.launch {
             _isSaving.value = true
-            val uid = _activeUserId.value
-            val res = repository.saveInspectorProfile(
+            val currentAcc = (userAccountState.value as? UiState.Success)?.data
+            val uid = _activeUserId.value.ifBlank { currentAcc?.userId.orEmpty() }
+            val res = repository.saveUserNameAfterLogin(
                 userId = uid,
                 inspectorName = inspectorName,
                 designation = designation,
                 officeName = officeName,
+                existingAccount = currentAcc,
                 existingProfile = profileStream.value
             )
             _isSaving.value = false

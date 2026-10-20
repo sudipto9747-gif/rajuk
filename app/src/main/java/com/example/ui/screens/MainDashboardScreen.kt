@@ -154,6 +154,7 @@ fun MainDashboardScreen(
     var reportPendingDelete by remember { mutableStateOf<InspectionReport?>(null) }
     var showPdfReportGeneratorDialog by rememberSaveable { mutableStateOf(false) }
     var showWebVersionDialog by rememberSaveable { mutableStateOf(false) }
+    var isInteractiveWebAppOpen by rememberSaveable { mutableStateOf(false) }
 
     val currentViewState = (uiState as? UiState.Success)?.data
     val currentAccount = (userAccountState as? UiState.Success)?.data ?: currentViewState?.userAccount
@@ -234,6 +235,17 @@ fun MainDashboardScreen(
         .ifBlank { currentViewState?.allMonthReports?.firstOrNull()?.inspectorName.orEmpty() }
     val isAdminUser = currentViewState?.isAdmin == true || currentAccount.role == "admin" || viewModel.isBootstrappedAdmin
     val pendingApprovalCount = currentViewState?.allUserAccounts?.count { it.approvalStatus == "pending" } ?: 0
+
+    if (isInteractiveWebAppOpen) {
+        WebAppInteractiveScreen(
+            reports = currentViewState?.allTimeReports ?: emptyList(),
+            users = currentViewState?.allUserAccounts ?: listOfNotNull(currentAccount),
+            tasks = currentViewState?.allTasks ?: emptyList(),
+            customOptions = currentViewState?.customOptions ?: emptyList(),
+            onClose = { isInteractiveWebAppOpen = false }
+        )
+        return
+    }
 
     if (isFormOpen) {
         InspectionFormScreen(
@@ -535,6 +547,13 @@ fun MainDashboardScreen(
                                         },
                                         onOpenAdminApprovalClick = {
                                             selectedTab = 3
+                                        },
+                                        onEditReport = { report ->
+                                            editingReport = report
+                                            isFormOpen = true
+                                        },
+                                        onDeleteReport = { report ->
+                                            reportPendingDelete = report
                                         }
                                     )
                                 }
@@ -694,7 +713,7 @@ fun MainDashboardScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteInspection(target.id)
+                        viewModel.deleteInspection(target.id, target.userId)
                         reportPendingDelete = null
                     },
                     modifier = Modifier.testTag("confirm_delete_button")
@@ -726,25 +745,39 @@ fun MainDashboardScreen(
             onDismissRequest = { showWebVersionDialog = false },
             title = {
                 Text(
-                    text = "🌐 যেকোনো ব্রাউজারে চালানোর ওয়েব ভার্সন",
+                    text = "🌐 সম্পূর্ণ ওয়েব ভার্সন (সকল ফিচার সহ)",
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "আপনার সম্পূর্ণ অ্যাপটির ওয়েব ভার্সন (/web/index.html) তৈরি করা হয়েছে, যা কম্পিউটার বা মোবাইলের যেকোনো ব্রাউজারে (Chrome, Edge, Safari, Firefox) সরাসরি চলে।"
+                        text = "আপনার সম্পূর্ণ প্রোগ্রামটির ওয়েব ভার্সন (/web/index.html) তৈরি করা হয়েছে—যাতে লগইন/রেজিস্ট্রেশন, ৫টি রিপোর্ট ক্যাটাগরি, টাস্ক ম্যানেজার, ইউজার অ্যাপ্রুভাল ও রোল ম্যানেজমেন্ট, অপশন কাস্টমাইজার এবং অফিসিয়াল A4 PDF রিপোর্ট জেনারেটর হুবহু একইভাবে যুক্ত আছে।"
                     )
                     Text(
-                        text = "• বর্তমান সকল ডাটা সহ 'RAJUK_Office_Report_Web_App.html' ফাইলটি সরাসরি ব্রাউজারে ওপেন, ডাউনলোড অথবা কম্পিউটারে/হোয়াটসঅ্যাপে শেয়ার করতে নিচের অপশন ব্যবহার করুন।",
+                        text = "• বর্তমান সকল রিপোর্ট, ইউজার, টাস্ক ও কাস্টম অপশন সহ ওয়েব ভার্সনটি সরাসরি চালু করুন, ব্রাউজারে ওপেন করুন অথবা কম্পিউটারে/হোয়াটসঅ্যাপে শেয়ার করুন:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Button(
                         onClick = {
+                            showWebVersionDialog = false
+                            isInteractiveWebAppOpen = true
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("launch_interactive_web_app_button")
+                    ) {
+                        Text("🖥️ ওয়েব ভার্সন এখানেই চালান (Live Web App)", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = {
                             WebVersionExportUtil.openWebVersionInBrowser(
                                 context = context,
-                                reports = currentViewState?.allTimeReports ?: emptyList()
+                                reports = currentViewState?.allTimeReports ?: emptyList(),
+                                users = currentViewState?.allUserAccounts ?: listOfNotNull(currentAccount),
+                                tasks = currentViewState?.allTasks ?: emptyList(),
+                                customOptions = currentViewState?.customOptions ?: emptyList()
                             )
                             showWebVersionDialog = false
                         },
@@ -762,7 +795,10 @@ fun MainDashboardScreen(
                             onClick = {
                                 WebVersionExportUtil.downloadWebVersionToDevice(
                                     context = context,
-                                    reports = currentViewState?.allTimeReports ?: emptyList()
+                                    reports = currentViewState?.allTimeReports ?: emptyList(),
+                                    users = currentViewState?.allUserAccounts ?: listOfNotNull(currentAccount),
+                                    tasks = currentViewState?.allTasks ?: emptyList(),
+                                    customOptions = currentViewState?.customOptions ?: emptyList()
                                 )
                                 showWebVersionDialog = false
                             },
@@ -776,7 +812,10 @@ fun MainDashboardScreen(
                             onClick = {
                                 WebVersionExportUtil.shareWebVersionFile(
                                     context = context,
-                                    reports = currentViewState?.allTimeReports ?: emptyList()
+                                    reports = currentViewState?.allTimeReports ?: emptyList(),
+                                    users = currentViewState?.allUserAccounts ?: listOfNotNull(currentAccount),
+                                    tasks = currentViewState?.allTasks ?: emptyList(),
+                                    customOptions = currentViewState?.customOptions ?: emptyList()
                                 )
                                 showWebVersionDialog = false
                             },
@@ -1596,7 +1635,9 @@ private fun ViewDataTabContent(
     onAuthorizedFilterChange: (AuthorizedFilter) -> Unit,
     onBuildingTypeFilterChange: (String?) -> Unit,
     onEnterDataClick: () -> Unit,
-    onOpenAdminApprovalClick: () -> Unit
+    onOpenAdminApprovalClick: () -> Unit,
+    onEditReport: (InspectionReport) -> Unit = {},
+    onDeleteReport: (InspectionReport) -> Unit = {}
 ) {
     var showFullTableReport by rememberSaveable { mutableStateOf(false) }
 
@@ -1826,9 +1867,9 @@ private fun ViewDataTabContent(
                     InspectionReportCard(
                         serialNumber = index + 1,
                         report = report,
-                        showEditActions = false,
-                        onEdit = {},
-                        onDelete = {}
+                        showEditActions = data.isAdmin,
+                        onEdit = { onEditReport(report) },
+                        onDelete = { onDeleteReport(report) }
                     )
                 }
             }

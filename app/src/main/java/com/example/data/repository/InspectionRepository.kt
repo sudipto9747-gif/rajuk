@@ -20,6 +20,8 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 
 class InspectionRepository(
@@ -268,13 +270,14 @@ class InspectionRepository(
 
         return try {
             val accountRef = db.collection("user_accounts").document(uid)
-            val resolvedExistingAcc = existingAccount?.takeIf { it.userId == uid && it.createdAt != null }
+            val resolvedExistingAcc = existingAccount?.takeIf { it.userId == uid }
                 ?: accountRef.get().await().takeIf { it.exists() }?.toObject(
                     UserAccount::class.java,
                     DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
                 )
-            if (resolvedExistingAcc != null && resolvedExistingAcc.createdAt != null) {
+            if (resolvedExistingAcc != null) {
                 val updatedAccount = resolvedExistingAcc.copy(
+                    id = uid,
                     userId = uid,
                     inspectorName = cleanName,
                     designation = cleanDesignation,
@@ -290,6 +293,35 @@ class InspectionRepository(
                 officeName = cleanOffice,
                 existingProfile = existingProfile
             ).getOrThrow()
+
+            // Also propagate updated inspectorName to this user's existing reports so Admin sees the updated name
+            if (cleanName.isNotBlank()) {
+                runCatching {
+                    val userInspections = db.collection("users")
+                        .document(uid)
+                        .collection("inspections")
+                        .get()
+                        .await()
+                    for (doc in userInspections.documents) {
+                        doc.reference.update(
+                            mapOf(
+                                "inspectorName" to cleanName,
+                                "updatedAt" to FieldValue.serverTimestamp()
+                            )
+                        ).await()
+                        runCatching {
+                            db.collection("all_inspections")
+                                .document(doc.id)
+                                .update(
+                                    mapOf(
+                                        "inspectorName" to cleanName,
+                                        "updatedAt" to FieldValue.serverTimestamp()
+                                    )
+                                ).await()
+                        }
+                    }
+                }
+            }
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
@@ -327,7 +359,6 @@ class InspectionRepository(
         val registration = db.collection("users")
             .document(userId)
             .collection("inspections")
-            .whereEqualTo("userId", userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     handleFirestoreError(error, OperationType.LIST, path)
@@ -338,14 +369,100 @@ class InspectionRepository(
                     val items = snapshot.toObjects(
                         InspectionReport::class.java,
                         DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
-                    ).sortedWith(
+                    ).map { report ->
+                        if (report.userId.isBlank()) report.copy(userId = userId) else report
+                    }.sortedWith(
                         compareByDescending<InspectionReport> { it.inspectionDate }
-                            .thenByDescending { it.createdAt ?: Timestamp(0, 0) }
+                            .thenByDescending { it.updatedAt ?: it.createdAt ?: Timestamp(0, 0) }
                     )
                     trySend(items)
                 }
             }
         awaitClose { registration.remove() }
+    }
+
+    private fun observeCentralInspections(): Flow<List<InspectionReport>> = callbackFlow {
+        val registration = db.collection("all_inspections")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val items = snapshot.toObjects(
+                        InspectionReport::class.java,
+                        DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                    )
+                    trySend(items)
+                }
+            }
+        awaitClose { registration.remove() }
+    }
+
+    private fun observeCollectionGroupInspections(): Flow<List<InspectionReport>> = callbackFlow {
+        val registration = db.collectionGroup("inspections")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val items = snapshot.documents.mapNotNull { doc ->
+                        val parsed = doc.toObject(
+                            InspectionReport::class.java,
+                            DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                        )
+                        val parentUid = doc.reference.parent.parent?.id.orEmpty()
+                        if (parsed != null && parsed.userId.isBlank() && parentUid.isNotBlank()) {
+                            parsed.copy(userId = parentUid)
+                        } else {
+                            parsed
+                        }
+                    }
+                    trySend(items)
+                }
+            }
+        awaitClose { registration.remove() }
+    }
+
+    fun observeAllInspectionsForAdmin(knownUserIds: List<String>): Flow<List<InspectionReport>> {
+        val cleanUids = (knownUserIds + PasswordHasher.phoneToUserId(ADMIN_LOGIN_PHONE))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        val perUserFlows: List<Flow<List<InspectionReport>>> = cleanUids.map { uid ->
+            observeInspections(uid)
+        }
+        val allFlows: List<Flow<List<InspectionReport>>> =
+            listOf(observeCentralInspections(), observeCollectionGroupInspections()) + perUserFlows
+
+        return combine(allFlows) { arraysOfLists ->
+            val mergedById = linkedMapOf<String, InspectionReport>()
+            for (list in arraysOfLists) {
+                for (report in list) {
+                    val key = report.id.ifBlank { "${report.userId}_${report.inspectionDate}_${report.ownerName}" }
+                    val existing = mergedById[key]
+                    if (existing == null) {
+                        mergedById[key] = report
+                    } else {
+                        val existingTime = (existing.updatedAt ?: existing.createdAt)?.toDate()?.time ?: 0L
+                        val incomingTime = (report.updatedAt ?: report.createdAt)?.toDate()?.time ?: 0L
+                        val adminUid = PasswordHasher.phoneToUserId(ADMIN_LOGIN_PHONE)
+                        // Prefer the newer update, or if timestamps are equal, prefer the original non-admin userId owner
+                        if (incomingTime > existingTime ||
+                            (incomingTime == existingTime && existing.userId == adminUid && report.userId.isNotBlank() && report.userId != adminUid)
+                        ) {
+                            mergedById[key] = report
+                        }
+                    }
+                }
+            }
+            mergedById.values.sortedWith(
+                compareByDescending<InspectionReport> { it.inspectionDate }
+                    .thenByDescending { it.updatedAt ?: it.createdAt ?: Timestamp(0, 0) }
+            )
+        }
     }
 
     fun observeInspectorProfile(userId: String): Flow<InspectorProfile?> = callbackFlow {
@@ -394,6 +511,9 @@ class InspectionRepository(
 
         return try {
             docRef.set(payload).await()
+            runCatching {
+                db.collection("all_inspections").document(docId).set(payload).await()
+            }
             Result.success(docId)
         } catch (e: CancellationException) {
             throw e
@@ -404,27 +524,42 @@ class InspectionRepository(
     }
 
     suspend fun updateInspection(report: InspectionReport, userId: String = ""): Result<Unit> {
-        val uid = resolveUserId(explicitUserId = userId.ifBlank { report.userId })
-        require(report.id.isNotBlank()) { "Inspection ID must not be blank for update" }
-        requireNotNull(report.createdAt) { "Inspection createdAt must not be null for update" }
+        val ownerUid = resolveUserId(explicitUserId = report.userId.ifBlank { userId })
+        if (report.id.isBlank()) {
+            return Result.failure(IllegalArgumentException("Inspection ID must not be blank for update"))
+        }
 
         val docRef = db.collection("users")
-            .document(uid)
+            .document(ownerUid)
             .collection("inspections")
             .document(report.id)
 
+        val updatedPayload = report.copy(
+            userId = ownerUid,
+            previousInspectionCount = report.previousInspectionCount.coerceIn(0L, 1000L),
+            previousMonthBalance = report.previousMonthBalance.coerceIn(0L, 1_000_000L),
+            currentMonthReceived = report.currentMonthReceived.coerceIn(0L, 1_000_000L),
+            totalReceived = report.totalReceived.coerceIn(0L, 1_000_000L),
+            unresolvedAtMonthEnd = report.unresolvedAtMonthEnd.coerceIn(0L, 1_000_000L),
+            updatedAt = null
+        )
+
         return try {
-            docRef.set(
-                report.copy(
-                    userId = uid,
-                    previousInspectionCount = report.previousInspectionCount.coerceIn(0L, 1000L),
-                    previousMonthBalance = report.previousMonthBalance.coerceIn(0L, 1_000_000L),
-                    currentMonthReceived = report.currentMonthReceived.coerceIn(0L, 1_000_000L),
-                    totalReceived = report.totalReceived.coerceIn(0L, 1_000_000L),
-                    unresolvedAtMonthEnd = report.unresolvedAtMonthEnd.coerceIn(0L, 1_000_000L),
-                    updatedAt = null
-                )
-            ).await()
+            docRef.set(updatedPayload).await()
+            runCatching {
+                db.collection("all_inspections").document(report.id).set(updatedPayload).await()
+            }
+            // If an admin or another session previously saved a duplicate under a different userId, clean it up
+            if (userId.isNotBlank() && userId != ownerUid) {
+                runCatching {
+                    db.collection("users")
+                        .document(userId)
+                        .collection("inspections")
+                        .document(report.id)
+                        .delete()
+                        .await()
+                }
+            }
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
@@ -436,7 +571,9 @@ class InspectionRepository(
 
     suspend fun deleteInspection(inspectionId: String, userId: String = ""): Result<Unit> {
         val uid = resolveUserId(explicitUserId = userId)
-        require(inspectionId.isNotBlank()) { "Inspection ID must not be blank" }
+        if (inspectionId.isBlank()) {
+            return Result.failure(IllegalArgumentException("Inspection ID must not be blank"))
+        }
         val docRef = db.collection("users")
             .document(uid)
             .collection("inspections")
@@ -444,6 +581,9 @@ class InspectionRepository(
 
         return try {
             docRef.delete().await()
+            runCatching {
+                db.collection("all_inspections").document(inspectionId).delete().await()
+            }
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e

@@ -8,7 +8,10 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.example.data.model.AppOption
+import com.example.data.model.AssignedTask
 import com.example.data.model.InspectionReport
+import com.example.data.model.UserAccount
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -16,13 +19,16 @@ import java.io.FileOutputStream
 
 object WebVersionExportUtil {
 
-    private fun buildWebHtmlWithSeedData(
+    fun buildWebHtmlWithSeedData(
         context: Context,
-        reports: List<InspectionReport>
+        reports: List<InspectionReport> = emptyList(),
+        users: List<UserAccount> = emptyList(),
+        tasks: List<AssignedTask> = emptyList(),
+        customOptions: List<AppOption> = emptyList()
     ): String {
         val rawHtml = context.assets.open("index.html").bufferedReader(Charsets.UTF_8).use { it.readText() }
 
-        val jsonArray = JSONArray()
+        val reportsArray = JSONArray()
         reports.forEach { r ->
             val obj = JSONObject().apply {
                 put("id", r.id.ifBlank { "rep_${System.currentTimeMillis()}" })
@@ -54,29 +60,97 @@ object WebVersionExportUtil {
                 put("planSentForFeedback", r.planSentForFeedback)
                 put("planCompletedWithin45Days", r.planCompletedWithin45Days)
                 put("planCompletedMoreThan45Days", r.planCompletedMoreThan45Days)
+                put("occupancyPreviousMonthBalance", r.occupancyPreviousMonthBalance)
                 put("occupancyPrevMonthBalance", r.occupancyPreviousMonthBalance)
                 put("occupancyCurrentMonthReceived", r.occupancyCurrentMonthReceived)
+                put("occupancyTotalApplications", r.occupancyTotalApplications)
                 put("occupancyTotalReceived", r.occupancyTotalApplications)
                 put("occupancyInspectedBuildings", r.occupancyInspectedBuildings)
                 put("occupancyIssuedCount", r.occupancyIssuedCount)
                 put("occupancyNotIssuedCount", r.occupancyNotIssuedCount)
                 put("occupancyNotIssuedReason", r.occupancyNotIssuedReason)
+                put("mobileCourtDate", r.mobileCourtDate.ifBlank { r.inspectionDate })
+                put("magistrateName", r.magistrateName)
                 put("mobileCourtBuildingStage", r.buildingType.ifBlank { "নির্মাণাধীন" })
-                put("mobileCourtFineAmount", r.mobileCourtFineAmount.toString())
+                put("mobileCourtFineAmount", r.mobileCourtFineAmount)
+                put("mobileCourtMeterCut", r.mobileCourtMeterCut)
+                put("mobileCourtMeterCount", r.mobileCourtMeterCount)
                 put("mobileCourtElectricityDisconnectedCount", if (r.mobileCourtMeterCut) 1 else 0)
                 put("mobileCourtMeterRemovedCount", r.mobileCourtMeterCount)
+                put("mobileCourtUndertakingSubmitted", r.mobileCourtUndertakingSubmitted)
                 put("remarks", r.remarks)
             }
-            jsonArray.put(obj)
+            reportsArray.put(obj)
+        }
+
+        val usersArray = JSONArray()
+        users.forEach { u ->
+            val obj = JSONObject().apply {
+                put("id", u.id.ifBlank { u.userId })
+                put("userId", u.userId.ifBlank { u.id })
+                put("email", u.email)
+                put("inspectorName", u.inspectorName)
+                put("designation", u.designation)
+                put("officeName", u.officeName)
+                put("phoneNumber", u.phoneNumber)
+                put("approvalStatus", u.approvalStatus)
+                put("role", u.role)
+            }
+            usersArray.put(obj)
+        }
+
+        val tasksArray = JSONArray()
+        tasks.forEach { t ->
+            val obj = JSONObject().apply {
+                put("id", t.id.ifBlank { "task_${System.currentTimeMillis()}" })
+                put("title", t.title)
+                put("description", t.description)
+                put("assignedToUserId", t.assignedToUserId)
+                put("assignedToName", t.assignedToName)
+                put("assignedToDesignation", t.assignedToDesignation)
+                put("assignedToPhone", t.assignedToPhone)
+                put("createdByUserId", t.createdByUserId)
+                put("createdByName", t.createdByName)
+                put("dueDate", t.dueDate)
+                put("priority", t.priority)
+                put("status", t.status)
+                put("completionNote", t.completionNote)
+                put("buildingAddress", t.buildingAddress)
+            }
+            tasksArray.put(obj)
+        }
+
+        val optionsArray = JSONArray()
+        customOptions.forEach { o ->
+            val obj = JSONObject().apply {
+                put("id", o.id.ifBlank { "opt_${System.currentTimeMillis()}" })
+                put("group", o.group)
+                put("name", o.name)
+                put("subGroup", o.subGroup)
+                put("sortOrder", o.sortOrder)
+            }
+            optionsArray.put(obj)
         }
 
         val seedScript = """
             <script>
             (function() {
               try {
-                var existing = localStorage.getItem('rajuk_web_inspection_reports_v1');
-                if (!existing || existing === '[]') {
-                  localStorage.setItem('rajuk_web_inspection_reports_v1', ${JSONObject.quote(jsonArray.toString())});
+                var exRep = localStorage.getItem('rajuk_web_inspection_reports_v1');
+                if ((!exRep || exRep === '[]') && ${reportsArray.length()} > 0) {
+                  localStorage.setItem('rajuk_web_inspection_reports_v1', ${JSONObject.quote(reportsArray.toString())});
+                }
+                var exUsr = localStorage.getItem('rajuk_web_user_accounts_v1');
+                if ((!exUsr || exUsr === '[]') && ${usersArray.length()} > 0) {
+                  localStorage.setItem('rajuk_web_user_accounts_v1', ${JSONObject.quote(usersArray.toString())});
+                }
+                var exTsk = localStorage.getItem('rajuk_web_assigned_tasks_v1');
+                if ((!exTsk || exTsk === '[]') && ${tasksArray.length()} > 0) {
+                  localStorage.setItem('rajuk_web_assigned_tasks_v1', ${JSONObject.quote(tasksArray.toString())});
+                }
+                var exOpt = localStorage.getItem('rajuk_web_custom_options_v1');
+                if ((!exOpt || exOpt === '[]') && ${optionsArray.length()} > 0) {
+                  localStorage.setItem('rajuk_web_custom_options_v1', ${JSONObject.quote(optionsArray.toString())});
                 }
               } catch (e) {}
             })();
@@ -88,10 +162,13 @@ object WebVersionExportUtil {
 
     fun downloadWebVersionToDevice(
         context: Context,
-        reports: List<InspectionReport>
+        reports: List<InspectionReport> = emptyList(),
+        users: List<UserAccount> = emptyList(),
+        tasks: List<AssignedTask> = emptyList(),
+        customOptions: List<AppOption> = emptyList()
     ) {
         try {
-            val htmlContent = buildWebHtmlWithSeedData(context, reports)
+            val htmlContent = buildWebHtmlWithSeedData(context, reports, users, tasks, customOptions)
             val bytes = htmlContent.toByteArray(Charsets.UTF_8)
             val fileName = "RAJUK_Office_Report_Web_App.html"
 
@@ -140,10 +217,13 @@ object WebVersionExportUtil {
 
     fun shareWebVersionFile(
         context: Context,
-        reports: List<InspectionReport>
+        reports: List<InspectionReport> = emptyList(),
+        users: List<UserAccount> = emptyList(),
+        tasks: List<AssignedTask> = emptyList(),
+        customOptions: List<AppOption> = emptyList()
     ) {
         try {
-            val htmlContent = buildWebHtmlWithSeedData(context, reports)
+            val htmlContent = buildWebHtmlWithSeedData(context, reports, users, tasks, customOptions)
             val webDir = File(context.cacheDir, "web")
             if (!webDir.exists()) webDir.mkdirs()
             val fileName = "RAJUK_Office_Report_Web_App.html"
@@ -164,7 +244,7 @@ object WebVersionExportUtil {
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(
                     Intent.EXTRA_TEXT,
-                    "রাজউক অফিস মাসিক প্রতিবেদন - ওয়েব অ্যাপ ($fileName)। ফাইলটি ডাউনলোড করে যেকোনো কম্পিউটার বা মোবাইলের ব্রাউজারে (Chrome/Edge/Safari) ওপেন করুন।"
+                    "রাজউক অফিস মাসিক প্রতিবেদন - ওয়েব অ্যাপ ($fileName)। ফাইলটি ডাউনলোড করে যেকোনো কম্পিউটার বা মোবাইলের ব্রাউজারে (Chrome/Edge/Safari/Firefox) ওপেন করুন।"
                 )
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
@@ -183,11 +263,14 @@ object WebVersionExportUtil {
 
     fun openWebVersionInBrowser(
         context: Context,
-        reports: List<InspectionReport>
+        reports: List<InspectionReport> = emptyList(),
+        users: List<UserAccount> = emptyList(),
+        tasks: List<AssignedTask> = emptyList(),
+        customOptions: List<AppOption> = emptyList()
     ) {
         try {
-            downloadWebVersionToDevice(context, reports)
-            val htmlContent = buildWebHtmlWithSeedData(context, reports)
+            downloadWebVersionToDevice(context, reports, users, tasks, customOptions)
+            val htmlContent = buildWebHtmlWithSeedData(context, reports, users, tasks, customOptions)
             val webDir = File(context.cacheDir, "web")
             if (!webDir.exists()) webDir.mkdirs()
             val fileName = "RAJUK_Office_Report_Web_App.html"
@@ -211,7 +294,7 @@ object WebVersionExportUtil {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
         } catch (e: Exception) {
-            shareWebVersionFile(context, reports)
+            shareWebVersionFile(context, reports, users, tasks, customOptions)
         }
     }
 }

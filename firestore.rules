@@ -245,5 +245,15 @@ service cloud.firestore {
         allow create, update, delete: if isValidId(userId) && isValidId(inspectionId);
       }
     }
+
+    match /all_inspections/{inspectionId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(inspectionId);
+    }
+
+    match /{path=**}/inspections/{inspectionId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(inspectionId);
+    }
   }
 }

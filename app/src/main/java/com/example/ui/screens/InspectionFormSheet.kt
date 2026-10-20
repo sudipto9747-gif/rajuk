@@ -126,7 +126,13 @@ fun InspectionFormScreen(
 
     val hasInitialReport = initialReport != null
     val initReport = initialReport ?: InspectionReport()
-    val reportIdKey = initReport.id
+    val reportIdKey = remember(initialReport, initialCategory, defaultMonth) {
+        if (initialReport == null) {
+            "new_${initialCategory}_${defaultMonth}"
+        } else {
+            "${initialReport.id}_${initialReport.updatedAt?.seconds ?: 0L}_${initialReport.updatedAt?.nanoseconds ?: 0}_${initialReport.hashCode()}"
+        }
+    }
 
     var reportCategory by rememberSaveable(reportIdKey, initialCategory) {
         mutableStateOf(

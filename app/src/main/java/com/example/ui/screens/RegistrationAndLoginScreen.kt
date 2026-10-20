@@ -96,10 +96,6 @@ fun RegistrationAndLoginGateScreen(
         onError: (String) -> Unit
     ) -> Unit
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val credentialManager = remember(context) { CredentialManager.create(context) }
-
     // Default to Login (0) so Admin or existing users can immediately log in, or switch to Register (1)
     var selectedModeTab by rememberSaveable {
         mutableIntStateOf(0)
